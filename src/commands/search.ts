@@ -1,0 +1,50 @@
+import { Client as ErisClient } from 'eris';
+import { AutocompleteChoice, AutocompleteContext, CommandContext, CommandOptionType, SlashCommand } from 'slash-create';
+import { filter as fuzzyFilter } from 'fuzzy';
+import { typeMap } from '../util/typeResolution';
+
+export default class SearchCommand extends SlashCommand<ErisClient> {
+  constructor(creator) {
+    super(creator, {
+      name: 'search',
+      description: 'Search for a documentation entry.',
+      options: [
+        {
+          name: 'query',
+          description: 'The query to search all entries.',
+          type: CommandOptionType.STRING,
+          autocomplete: true,
+          required: true
+        }
+      ]
+    });
+  }
+
+  async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
+    const { query } = ctx.options;
+
+    const queryResults = fuzzyFilter(query, Object.keys(typeMap.all));
+
+    return queryResults
+      .map((entry) => ({
+        name: `${entry.string} {score: ${entry.score}}`,
+        value: entry.string
+      }))
+      .slice(0, 25);
+  }
+
+  async run(ctx: CommandContext): Promise<string> {
+    await ctx.defer(true);
+
+    const { query } = ctx.options;
+
+    const [, first, second] = query.match(/(\w+)[#~$](\w+)/);
+    const subtype = typeMap.all[query];
+
+    return [
+      `You selected \`${query}\`, this is not a entry retrieval command.`,
+      '*Entries found in this command may include internal structures not included on the primary command.*',
+      `> Please use \`/docs ${subtype} class: ${first}${second ? ` ${subtype}: ${second}` : ''}\`.`
+    ].join('\n');
+  }
+}
