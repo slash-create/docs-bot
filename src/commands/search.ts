@@ -1,7 +1,7 @@
 import { Client as ErisClient } from 'eris';
 import { AutocompleteChoice, AutocompleteContext, CommandContext, CommandOptionType, SlashCommand } from 'slash-create';
-import { filter as fuzzyFilter } from 'fuzzy';
-import { typeMap } from '../util/typeResolution';
+
+import TypeNavigator from '../util/typeNavigator';
 
 export default class SearchCommand extends SlashCommand<ErisClient> {
   constructor(creator) {
@@ -21,16 +21,11 @@ export default class SearchCommand extends SlashCommand<ErisClient> {
   }
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
-    const { query } = ctx.options;
+    const { query } = ctx.options as { query: string };
 
-    const queryResults = fuzzyFilter(query, Object.keys(typeMap.all));
+    const results = TypeNavigator.fuzzyFilter([query]);
 
-    return queryResults
-      .map((entry) => ({
-        name: `${entry.string} {score: ${entry.score}}`,
-        value: entry.string
-      }))
-      .slice(0, 25);
+    return results.map((entry) => ({ name: entry, value: entry }));
   }
 
   async run(ctx: CommandContext): Promise<string> {
@@ -39,7 +34,7 @@ export default class SearchCommand extends SlashCommand<ErisClient> {
     const { query } = ctx.options;
 
     const [, first, second] = query.match(/(\w+)[#~$](\w+)/);
-    const subtype = typeMap.all[query];
+    const subtype = TypeNavigator.typeMap.all[query];
 
     return [
       `You selected \`${query}\`, this is not a entry retrieval command.`,

@@ -14,7 +14,15 @@ import {
 } from 'slash-create';
 import { SC_RED } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
-import { AnyStructureDescriptor, ChildStructureDescriptor, ClassDescriptor, MethodDescriptor, TypeRoute, TypeSymbol } from '../util/metaTypes';
+import {
+  AnyStructureDescriptor,
+  ChildStructureDescriptor,
+  ClassDescriptor,
+  EventDescriptor,
+  MethodDescriptor,
+  TypeRoute,
+  TypeSymbol
+} from '../util/metaTypes';
 
 import { typeMap, fetchMetadata } from '../util/typeResolution';
 
@@ -113,23 +121,21 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
 
     switch (ctx.focused) {
       case 'class': {
-        let filteredClasses = Object.keys(typeMap.class);
+        let classDescriptors = metadata.classes;
 
         if (command === 'event')
-          filteredClasses = filteredClasses.filter((klass) => metadata.classes[typeMap.class[klass]].events?.length);
+          classDescriptors = classDescriptors.filter((descriptor) => descriptor.events?.length > 0);
 
-        const matchingKeys = fuzzy.filter(focusedOption, filteredClasses);
+        const matchingKeys = fuzzy.filter(focusedOption, classDescriptors, {
+          extract: (input) => input.name
+        });
 
         ctx.sendResults(
           matchingKeys
-            .map((key) => {
-              const classIndex = typeMap.class[key.string];
-              const classDescriptor = metadata.classes[classIndex];
-              return {
-                name: `${classDescriptor.name} {score: ${key.score}}`,
-                value: classDescriptor.name
-              };
-            })
+            .map(({ original, score }) => ({
+              name: `${original.name} {score: ${score}}`,
+              value: original.name
+            }))
             .slice(0, 25)
         );
         break;
@@ -149,13 +155,21 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
   async commonAutocompleteSearch(ctx: AutocompleteContext) {
     if (!ctx.options[ctx.subcommands[0]].class) return [];
 
+    const options = ctx.options[ctx.subcommands[0]];
+
     const combinedKey = this.combineKeys(ctx, ['class', ctx.focused]);
 
     console.log(ctx.focused, ctx.options);
 
-    const query = fuzzy.filter(combinedKey, Object.keys(typeMap[TypeRoute[ctx.focused]]));
+    console.log(ctx.subcommands[0], combinedKey, TypeRoute[ctx.focused]);
 
     const metadata = await fetchMetadata();
+
+    const classIndex = typeMap.class[options.classIndex];
+    const classDescriptor = metadata.classes[classIndex];
+    console.log(classDescriptor);
+
+    const query = fuzzy.filter(combinedKey, Object.keys(classDescriptor[TypeRoute[ctx.focused]] || []));
 
     const results = query.map((entry) => {
       const [classIndex, typeIndex] = typeMap[TypeRoute[ctx.focused]][entry.string];
@@ -195,17 +209,21 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
 
       const embed: MessageEmbedOptions = {
         color: SC_RED,
-        title: classEntry.name,
+        title: `${classEntry.name}${classEntry.extends ? ` *extends \`${classEntry.extends.join('')}\`*` : ''}`,
         description: [
           classEntry.description
           // classEntry.events?.length && `⌚ ${classEntry.events.length} events`,
           // classEntry.methods?.length && `🔧 ${classEntry.methods.length} methods`,
           // classEntry.props?.length && `📏 ${classEntry.props.length} props`
         ]
-          .filter(Boolean)
+          // .filter(Boolean)
           .join('\n'),
         timestamp: new Date(ctx.invokedAt),
-        fields: this.getClassEntityFields(classEntry.name, classEntry)
+        fields: this.getClassEntityFields(classEntry),
+        footer: {
+          text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
+          icon_url: ctx.user.avatarURL
+        }
       };
 
       try {
@@ -250,27 +268,19 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
     }
   ];
 
-  private getMethodEntityFields = (classEntry: ClassDescriptor, methodEntry: MethodDescriptor): EmbedField[] => {
-    if (!methodEntry.params.length) return [];
+  private getArgumentEntityFields = (argumentParent: MethodDescriptor | EventDescriptor): EmbedField[] => {
+    const { params } = argumentParent;
 
-    const names = [];
-    const types = [];
+    if (!params.length) return [];
 
-    methodEntry.params.forEach((paramEntry) => {
-      names.push(`\`${paramEntry.name}\``);
-      types.push(`\`${paramEntry.type.flat(3).join('')}\``);
-    });
-
-    return [
-      {
-        name: 'Arguments',
-        value: names.join('\n')
-      },
-      {
-        name: 'Type',
-        value: types.join('\n')
-      }
-    ];
+    return params.map((argument, index) => ({
+      name: !index ? 'Arguments' : '\u200b',
+      value: [
+        `\`${argument.name}\` - ${argument.type.flat(2).join('')} ${argument.default ? `= ${argument.default}` : ''}`,
+        `${argument.description}`
+      ].join('\n'),
+      inline: true
+    }));
   };
 
   private getClassEntityFields = (classEntry: ClassDescriptor): EmbedField[] =>
