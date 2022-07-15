@@ -89,10 +89,22 @@ export enum TypeSymbol {
   event = '$'
 }
 
+export enum TypeSource {
+  method = 'method',
+  prop = 'prop',
+  event = 'event'
+}
+
 export enum TypeRoute {
   method = 'methods',
   prop = 'props',
   event = 'events'
+}
+
+export interface TypeOutcome {
+  method: MethodDescriptor;
+  prop: MemberDescriptor;
+  event: EventDescriptor;
 }
 
 export type ChildStructureDescriptor = MethodDescriptor | MemberDescriptor | EventDescriptor;
