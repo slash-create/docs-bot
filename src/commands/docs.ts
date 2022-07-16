@@ -245,7 +245,7 @@ export default class DocumentationCommand extends SlashCommand {
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
         Object.assign(embed, {
-          title: `${combinedKey}`,
+          title: combinedKey,
           description: typeEntry.description
         });
 
