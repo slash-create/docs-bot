@@ -190,7 +190,7 @@ export default class DocumentationCommand extends SlashCommand {
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
-    if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
+    // if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
 
     const calledType = ctx.subcommands[0];
     const options = ctx.options[calledType];

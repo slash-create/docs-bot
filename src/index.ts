@@ -31,4 +31,7 @@ creator.on('commandError', (command, error) => logger.error(`Command ${command.c
 creator
   .withServer(new FastifyServer())
   .registerCommandsIn(path.join(__dirname, 'commands'))
-  .startServer();
+  .collectCommandIDs()
+  .then(() => {
+    creator.startServer();
+  });
