@@ -48,6 +48,7 @@ export interface FileMeta {
 
 export interface MethodDescriptor {
   deprecated: boolean;
+  description: string;
   access?: 'private';
   emits: []; // unknown
   examples: []; // unknown
@@ -85,14 +86,26 @@ export interface TypeDescriptor {
 
 export enum TypeSymbol {
   method = '#',
-  member = '~',
+  prop = '~',
   event = '$'
+}
+
+export enum TypeSource {
+  method = 'method',
+  prop = 'prop',
+  event = 'event'
 }
 
 export enum TypeRoute {
   method = 'methods',
   prop = 'props',
   event = 'events'
+}
+
+export interface TypeOutcome {
+  method: MethodDescriptor;
+  prop: MemberDescriptor;
+  event: EventDescriptor;
 }
 
 export type ChildStructureDescriptor = MethodDescriptor | MemberDescriptor | EventDescriptor;

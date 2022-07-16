@@ -1,22 +1,32 @@
 import { Client as ErisClient } from 'eris';
-import fuzzy from 'fuzzy';
 import {
-  SlashCommand,
-  CommandOptionType,
-  SlashCreator,
-  CommandContext,
+  AutocompleteChoice,
   AutocompleteContext,
-  ComponentType,
-  ComponentActionRow,
   ButtonStyle,
+  CommandContext,
+  CommandOptionType,
+  ComponentActionRow,
+  ComponentType,
+  EmbedField,
   MessageEmbedOptions,
-  EmbedField
+  MessageOptions,
+  SlashCommand,
+  SlashCreator
 } from 'slash-create';
+
 import { SC_RED } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
-import { AnyStructureDescriptor, ChildStructureDescriptor, ClassDescriptor, MethodDescriptor, TypeRoute, TypeSymbol } from '../util/metaTypes';
-
-import { typeMap, fetchMetadata } from '../util/typeResolution';
+import {
+  ChildStructureDescriptor,
+  ClassDescriptor,
+  EventDescriptor,
+  FileMeta,
+  MethodDescriptor,
+  TypeDescriptor,
+  TypeSource,
+  TypeSymbol
+} from '../util/metaTypes';
+import TypeNavigator from '../util/typeNavigator';
 
 export default class DocumentationCommand extends SlashCommand<ErisClient> {
   constructor(creator: SlashCreator) {
@@ -101,130 +111,177 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
               autocomplete: true
             }
           ]
+        },
+        {
+          name: 'typedef',
+          description: 'Get entry for a type definition.',
+          type: CommandOptionType.SUB_COMMAND,
+          options: [
+            {
+              name: 'typedef',
+              description: 'The type to retrieve.',
+              type: CommandOptionType.STRING,
+              required: true,
+              autocomplete: true
+            }
+          ]
         }
       ]
     });
   }
 
-  async autocomplete(ctx: AutocompleteContext): Promise<any> {
+  async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[] | void> {
     const command = ctx.subcommands[0];
     const focusedOption: string = ctx.options[command][ctx.focused];
-    const metadata = await fetchMetadata();
 
     switch (ctx.focused) {
       case 'class': {
-        let filteredClasses = Object.keys(typeMap.class);
+        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class', 25);
 
         if (command === 'event')
-          filteredClasses = filteredClasses.filter((klass) => metadata.classes[typeMap.class[klass]].events?.length);
+          matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
 
-        const matchingKeys = fuzzy.filter(focusedOption, filteredClasses);
-
-        ctx.sendResults(
-          matchingKeys
-            .map((key) => {
-              const classIndex = typeMap.class[key.string];
-              const classDescriptor = metadata.classes[classIndex];
-              return {
-                name: `${classDescriptor.name} {score: ${key.score}}`,
-                value: classDescriptor.name
-              };
-            })
-            .slice(0, 25)
-        );
-        break;
+        return matchingKeys.map((value) => ({ name: value.string, value: value.string }));
+      }
+      case 'typedef': {
+        const results = TypeNavigator.fuzzyFilter(focusedOption, 'typedef');
+        return results.map((value) => ({ name: value.string, value: value.string }));
       }
       case 'event':
       case 'method':
-      case 'member': {
-        this.commonAutocompleteSearch(ctx);
-        break;
-      }
+      case 'prop':
+        return this.commonAutocompleteSearch(ctx, command);
       default: {
         return [];
       }
     }
   }
 
-  async commonAutocompleteSearch(ctx: AutocompleteContext) {
-    if (!ctx.options[ctx.subcommands[0]].class) return [];
+  async commonAutocompleteSearch(ctx: AutocompleteContext, command: string) {
+    const options = ctx.options[command];
+    if (!options.class)
+      return [
+        {
+          name: 'Search for a class entry first.',
+          value: 'null'
+        }
+      ];
 
-    const combinedKey = this.combineKeys(ctx, ['class', ctx.focused]);
+    const assumedPartialKey = TypeNavigator.joinKey([options.class, options[ctx.focused]], TypeSymbol[ctx.focused]);
 
-    console.log(ctx.focused, ctx.options);
+    /**
+     * argument 2: {focused} has certainty of being one of the three options selected within each subcommand
+     * either the subcommand itself, or the option can be used - no difference as to the outcome (including forced type assertion)
+     */
+    const results = TypeNavigator.fuzzyFilter(assumedPartialKey, ctx.focused as TypeSource);
+    // const classEntry = TypeNavigator.getClassDescriptor(options.class);
+    return results
+      .map((entry) => {
+        const typeEntry = TypeNavigator.findFirstMatch(entry.string);
 
-    const query = fuzzy.filter(combinedKey, Object.keys(typeMap[TypeRoute[ctx.focused]]));
+        console.log(entry.string, typeEntry);
 
-    const metadata = await fetchMetadata();
+        const params = 'params' in typeEntry ? typeEntry.params : [];
+        const hasArguments = params && params.length > 0;
 
-    const results = query.map((entry) => {
-      const [classIndex, typeIndex] = typeMap[TypeRoute[ctx.focused]][entry.string];
-      const classEntry = metadata.classes[classIndex];
-      const typeEntry: ChildStructureDescriptor = classEntry[TypeRoute[ctx.focused]][typeIndex];
-
-      const params = 'params' in typeEntry ? typeEntry.params : [];
-      const hasArguments = params.length > 0;
-
-      const entryKey = [classEntry.name, typeEntry.name].join(TypeSymbol[ctx.focused]);
-
-      return {
-        name: `${entryKey} ${hasArguments ? `(${params.length} arguments)` : ''} {score: ${entry.score}}`.trim(),
-        value: typeEntry.name
-      };
-    });
-
-    ctx.sendResults(results.slice(0, 25));
+        return {
+          name: `${entry.string} ${hasArguments ? `(${params.length} arguments)` : ''} {score: ${entry.score}}`.trim(),
+          value: typeEntry.name
+        };
+      })
+      .filter(Boolean);
   }
 
-  combineKeys(ctx: AutocompleteContext | CommandContext, keys: [string, string?], seperator?: string): string {
-    if (!keys[1]) keys[1] = ctx.subcommands[0];
-    if (!seperator) seperator = TypeSymbol[keys[1]];
-    const options = ctx.options[ctx.subcommands[0]];
-    return keys.map((key) => options[key]).join(seperator);
-  }
+  async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
+    if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
 
-  async run(ctx: CommandContext) {
     const calledType = ctx.subcommands[0];
-    const calledOptions = ctx.options[calledType];
+    const options = ctx.options[calledType];
 
-    const metadata = await fetchMetadata();
-
-    if (calledType === 'class') {
-      const classIndex = typeMap.class[calledOptions.class];
-      const classEntry = metadata.classes[classIndex];
-
-      const embed: MessageEmbedOptions = {
-        color: SC_RED,
-        title: classEntry.name,
-        description: [
-          classEntry.description
-          // classEntry.events?.length && `⌚ ${classEntry.events.length} events`,
-          // classEntry.methods?.length && `🔧 ${classEntry.methods.length} methods`,
-          // classEntry.props?.length && `📏 ${classEntry.props.length} props`
-        ]
-          .filter(Boolean)
-          .join('\n'),
-        timestamp: new Date(ctx.invokedAt),
-        fields: this.getClassEntityFields(classEntry.name, classEntry)
-      };
-
-      try {
-        await ctx.send({
-          embeds: [embed],
-          components: this.getLinkComponents([classEntry.name], classEntry)
-        });
-      } catch (e) {
-        console.log(e);
-        console.log(JSON.stringify(e.response.errors.data, null, 2));
+    const embed: MessageEmbedOptions = {
+      color: SC_RED,
+      fields: [],
+      timestamp: new Date(ctx.invokedAt),
+      footer: {
+        text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
+        icon_url: ctx.user.avatarURL
       }
-    } else {
-      const combinedKey = this.combineKeys(ctx, ['class'], TypeSymbol[calledType]);
+    };
 
-      return combinedKey;
+    const fragments: [string, string?] = [null, null];
+    let typeMeta: FileMeta = null;
+
+    switch (calledType) {
+      case 'class':
+      case 'typedef': {
+        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as ClassDescriptor | TypeDescriptor;
+        try {
+          typeMeta = descriptor.meta;
+        } catch {
+          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
+          return;
+        }
+
+        Object.assign(embed, {
+          title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
+          fields: this.getClassEntityFields(descriptor, 'construct' in descriptor)
+        });
+
+        fragments[0] = descriptor.name;
+        break;
+      }
+      default: {
+        if (options[calledType] === 'null') {
+          // yes... litereal null
+          ctx.send('Invalid query, please check arguments.', { ephemeral: true });
+          return;
+        }
+
+        const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
+        try {
+          typeMeta = typeEntry.meta;
+        } catch {
+          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
+          return;
+        }
+
+        const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
+
+        Object.assign(embed, {
+          title: `${combinedKey}`,
+          description: typeEntry.description
+        });
+
+        if ('type' in typeEntry)
+          embed.fields.push({
+            name: 'Type',
+            value: `${this.resolveType(typeEntry.type)}`
+          });
+
+        if ('params' in typeEntry)
+          // calledType !== 'prop'
+          embed.fields.push(...this.getArgumentEntityFields(typeEntry));
+
+        if ('returns' in typeEntry)
+          // calledType === 'method'
+          embed.fields.push({
+            name: 'Returns',
+            value: `\`${this.resolveType(typeEntry.returns)}\``
+          });
+
+        // exact check, if typeEntry were a class i'd do instance of... maybe
+        fragments[0] = options.class;
+        fragments[1] = (calledType === 'event' ? 'e-' : '') + options[calledType];
+      }
     }
+
+    return {
+      embeds: [embed],
+      components: this.getLinkComponents(fragments, typeMeta)
+    };
   }
 
-  private getLinkComponents = (target: [string, string?], typeEntry: AnyStructureDescriptor): ComponentActionRow[] => [
+  private getLinkComponents = (target: [string, string?], typeMeta: FileMeta): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
       components: [
@@ -240,7 +297,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         {
           type: ComponentType.BUTTON,
           style: ButtonStyle.LINK,
-          url: buildGitHubLink(typeEntry.meta),
+          url: buildGitHubLink(typeMeta),
           label: 'Open GitHub',
           emoji: {
             name: '📂'
@@ -250,33 +307,26 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
     }
   ];
 
-  private getMethodEntityFields = (classEntry: ClassDescriptor, methodEntry: MethodDescriptor): EmbedField[] => {
-    if (!methodEntry.params.length) return [];
+  private getArgumentEntityFields = (argumentParent: MethodDescriptor | EventDescriptor): EmbedField[] => {
+    const { params } = argumentParent;
 
-    const names = [];
-    const types = [];
+    if (!params.length) return [];
 
-    methodEntry.params.forEach((paramEntry) => {
-      names.push(`\`${paramEntry.name}\``);
-      types.push(`\`${paramEntry.type.flat(3).join('')}\``);
-    });
-
-    return [
-      {
-        name: 'Arguments',
-        value: names.join('\n')
-      },
-      {
-        name: 'Type',
-        value: types.join('\n')
-      }
-    ];
+    return params.map((argument, index) => ({
+      name: !index ? 'Arguments' : '\u200b',
+      value: [
+        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
+          argument.default ? `= ${argument.default}` : ''
+        }`.trim(),
+        `${argument.description}`
+      ].join('\n')
+    }));
   };
 
-  private getClassEntityFields = (classEntry: ClassDescriptor): EmbedField[] =>
+  private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor, isClass: boolean): EmbedField[] =>
     [
       'props' in classEntry && {
-        name: `📏 Properies (${classEntry.props.length})`,
+        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${classEntry.props.length})`,
         value:
           classEntry.props
             .filter((propEntry) => !propEntry.name.startsWith('_'))
@@ -285,7 +335,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         inline: true
       },
       'methods' in classEntry && {
-        name: `🔧 Methods (${classEntry.methods.length})`,
+        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${classEntry.methods.length})`,
         value:
           classEntry.methods
             .filter((methodEntry) => methodEntry.access !== 'private' || !methodEntry.name.startsWith('_'))
@@ -295,7 +345,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         inline: true
       },
       'events' in classEntry && {
-        name: `⌚ Events (${classEntry.events.length})`,
+        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${classEntry.events.length})`,
         value:
           classEntry.events
             // implied of the existance as a a class
@@ -305,4 +355,16 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         inline: true
       }
     ].filter((field) => field && field.value !== 'None');
+
+  private resolveType = (type: string[][][]): string =>
+    type
+      .flat(2)
+      // .map((fragment) => {
+      //  console.log(fragment, TypeNavigator.data.typedefs[fragment]);
+      //  return TypeNavigator.data.typedefs[fragment] ? `[${fragment}](${buildDocsLink('typdef', fragment)})` : fragment;
+      // })
+      .join('');
+
+  private buildCommandMention = (commandName: string) =>
+    `</${this.commandName} ${commandName}:${this.ids.get('global')}>`;
 }
