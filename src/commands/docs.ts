@@ -32,7 +32,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'docs',
-      description: 'Says hello to you.',
+      description: 'Search documentation entries.',
       // functionality here is derived from Eris' docs bot
       options: [
         {
