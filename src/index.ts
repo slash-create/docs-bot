@@ -9,14 +9,12 @@ if (path.parse(process.cwd()).name === 'dist') dotenvPath = path.join(process.cw
 dotenv.config({ path: dotenvPath });
 
 const logger = new CatLoggr().setLevel(process.env.COMMANDS_DEBUG === 'true' ? 'debug' : 'info');
-const client = new ErisClient(process.env.DISCORD_BOT_TOKEN);
 const creator = new SlashCreator({
   applicationID: process.env.DISCORD_APP_ID,
   publicKey: process.env.DISCORD_PUBLIC_KEY,
   token: process.env.DISCORD_BOT_TOKEN,
   serverPort: parseInt(process.env.PORT, 10) || 8020,
-  serverHost: '0.0.0.0',
-  client
+  serverHost: '0.0.0.0'
 });
 
 creator.on('debug', (message) => logger.log(message));

@@ -1,4 +1,3 @@
-import { Client as ErisClient } from 'eris';
 import {
   AutocompleteChoice,
   AutocompleteContext,
@@ -28,7 +27,7 @@ import {
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
 
-export default class DocumentationCommand extends SlashCommand<ErisClient> {
+export default class DocumentationCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'docs',
