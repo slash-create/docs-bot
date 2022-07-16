@@ -1,4 +1,3 @@
-import { Client as ErisClient } from 'eris';
 import {
   AutocompleteChoice,
   AutocompleteContext,
@@ -28,7 +27,7 @@ import {
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
 
-export default class DocumentationCommand extends SlashCommand<ErisClient> {
+export default class DocumentationCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'docs',
@@ -191,7 +190,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
-    if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
+    // if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
 
     const calledType = ctx.subcommands[0];
     const options = ctx.options[calledType];
@@ -246,7 +245,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
         Object.assign(embed, {
-          title: `${combinedKey}`,
+          title: combinedKey,
           description: typeEntry.description
         });
 
