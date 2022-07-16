@@ -23,9 +23,9 @@ export default class SearchCommand extends SlashCommand<ErisClient> {
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
     const { query } = ctx.options as { query: string };
 
-    const results = TypeNavigator.fuzzyFilter([query]);
+    const results = TypeNavigator.fuzzyFilter(query);
 
-    return results.map((entry) => ({ name: entry, value: entry }));
+    return results.map((entry) => ({ name: `${entry.string} {score: ${entry.score}}`, value: entry.string }));
   }
 
   async run(ctx: CommandContext): Promise<string> {

@@ -10,7 +10,8 @@ import {
   ComponentActionRow,
   ButtonStyle,
   MessageEmbedOptions,
-  EmbedField
+  EmbedField,
+  AutocompleteChoice
 } from 'slash-create';
 import { SC_RED } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
@@ -21,8 +22,10 @@ import {
   EventDescriptor,
   MethodDescriptor,
   TypeRoute,
+  TypeSource,
   TypeSymbol
 } from '../util/metaTypes';
+import TypeNavigator from '../util/typeNavigator';
 
 import { typeMap, fetchMetadata } from '../util/typeResolution';
 
@@ -109,43 +112,46 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
               autocomplete: true
             }
           ]
-        }
+        } // ,
+        // {
+        //  name: 'type',
+        //  description: 'The type to retrieve.',
+        //  type: CommandOptionType.SUB_COMMAND,
+        //  options: [
+        //    {
+        //      name: 'type',
+        //      description: 'The type to retrieve.',
+        //      type: CommandOptionType.STRING,
+        //      required: true,
+        //      autocomplete: true
+        //    }
+        //  ]
+        // }
       ]
     });
   }
 
-  async autocomplete(ctx: AutocompleteContext): Promise<any> {
+  async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[] | void> {
     const command = ctx.subcommands[0];
     const focusedOption: string = ctx.options[command][ctx.focused];
-    const metadata = await fetchMetadata();
 
     switch (ctx.focused) {
       case 'class': {
-        let classDescriptors = metadata.classes;
+        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class', 25);
 
         if (command === 'event')
-          classDescriptors = classDescriptors.filter((descriptor) => descriptor.events?.length > 0);
+          matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
 
-        const matchingKeys = fuzzy.filter(focusedOption, classDescriptors, {
-          extract: (input) => input.name
-        });
-
-        ctx.sendResults(
-          matchingKeys
-            .map(({ original, score }) => ({
-              name: `${original.name} {score: ${score}}`,
-              value: original.name
-            }))
-            .slice(0, 25)
-        );
-        break;
+        return matchingKeys.map((value) => ({ name: value.string, value: value.string }));
       }
+      // case 'type': {
+      //  const results = TypeNavigator.fuzzyFilter(focusedOption, 'typedef');
+      //  return results.map((value) => ({ name: value.string, value: value.string }));
+      // }
       case 'event':
       case 'method':
-      case 'member': {
-        this.commonAutocompleteSearch(ctx);
-        break;
-      }
+      case 'prop':
+        return this.commonAutocompleteSearch(ctx);
       default: {
         return [];
       }
@@ -153,71 +159,51 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
   }
 
   async commonAutocompleteSearch(ctx: AutocompleteContext) {
-    if (!ctx.options[ctx.subcommands[0]].class) return [];
-
     const options = ctx.options[ctx.subcommands[0]];
+    if (!options.class)
+      return [
+        {
+          name: 'Search for a class entry first.',
+          value: 'null'
+        }
+      ];
 
-    const combinedKey = this.combineKeys(ctx, ['class', ctx.focused]);
+    const assumedPartialKey = TypeNavigator.joinKey([options.class, options[ctx.focused]], TypeSymbol[ctx.focused]);
 
-    console.log(ctx.focused, ctx.options);
+    /**
+     * argument 2: {focused} has certainty of being one of the three options selected within each subcommand
+     * either the subcommand itself, or the option can be used - no difference as to the outcome (including forced type assertion)
+     */
+    const results = TypeNavigator.fuzzyFilter(assumedPartialKey, ctx.focused as TypeSource);
+    // const classEntry = TypeNavigator.getClassDescriptor(options.class);
+    return results
+      .map((entry) => {
+        const typeEntry = TypeNavigator.findFirstMatch(entry.string);
 
-    console.log(ctx.subcommands[0], combinedKey, TypeRoute[ctx.focused]);
+        console.log(entry.string, typeEntry);
 
-    const metadata = await fetchMetadata();
+        const params = 'params' in typeEntry ? typeEntry.params : [];
+        const hasArguments = params && params.length > 0;
 
-    const classIndex = typeMap.class[options.classIndex];
-    const classDescriptor = metadata.classes[classIndex];
-    console.log(classDescriptor);
-
-    const query = fuzzy.filter(combinedKey, Object.keys(classDescriptor[TypeRoute[ctx.focused]] || []));
-
-    const results = query.map((entry) => {
-      const [classIndex, typeIndex] = typeMap[TypeRoute[ctx.focused]][entry.string];
-      const classEntry = metadata.classes[classIndex];
-      const typeEntry: ChildStructureDescriptor = classEntry[TypeRoute[ctx.focused]][typeIndex];
-
-      const params = 'params' in typeEntry ? typeEntry.params : [];
-      const hasArguments = params.length > 0;
-
-      const entryKey = [classEntry.name, typeEntry.name].join(TypeSymbol[ctx.focused]);
-
-      return {
-        name: `${entryKey} ${hasArguments ? `(${params.length} arguments)` : ''} {score: ${entry.score}}`.trim(),
-        value: typeEntry.name
-      };
-    });
-
-    ctx.sendResults(results.slice(0, 25));
-  }
-
-  combineKeys(ctx: AutocompleteContext | CommandContext, keys: [string, string?], seperator?: string): string {
-    if (!keys[1]) keys[1] = ctx.subcommands[0];
-    if (!seperator) seperator = TypeSymbol[keys[1]];
-    const options = ctx.options[ctx.subcommands[0]];
-    return keys.map((key) => options[key]).join(seperator);
+        return {
+          name: `${entry.string} ${hasArguments ? `(${params.length} arguments)` : ''} {score: ${entry.score}}`.trim(),
+          value: typeEntry.name
+        };
+      })
+      .filter(Boolean);
   }
 
   async run(ctx: CommandContext) {
     const calledType = ctx.subcommands[0];
-    const calledOptions = ctx.options[calledType];
-
-    const metadata = await fetchMetadata();
+    const options = ctx.options[calledType];
 
     if (calledType === 'class') {
-      const classIndex = typeMap.class[calledOptions.class];
-      const classEntry = metadata.classes[classIndex];
+      const classEntry = TypeNavigator.getClassDescriptor(options.class);
 
       const embed: MessageEmbedOptions = {
         color: SC_RED,
         title: `${classEntry.name}${classEntry.extends ? ` *extends \`${classEntry.extends.join('')}\`*` : ''}`,
-        description: [
-          classEntry.description
-          // classEntry.events?.length && `⌚ ${classEntry.events.length} events`,
-          // classEntry.methods?.length && `🔧 ${classEntry.methods.length} methods`,
-          // classEntry.props?.length && `📏 ${classEntry.props.length} props`
-        ]
-          // .filter(Boolean)
-          .join('\n'),
+        description: classEntry.description,
         timestamp: new Date(ctx.invokedAt),
         fields: this.getClassEntityFields(classEntry),
         footer: {
@@ -236,7 +222,12 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         console.log(JSON.stringify(e.response.errors.data, null, 2));
       }
     } else {
-      const combinedKey = this.combineKeys(ctx, ['class'], TypeSymbol[calledType]);
+      if (options[calledType] === 'null') {
+        // yes... litereal null
+        return ctx.send('Invalid query.', { ephemeral: true });
+      }
+
+      const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
       return combinedKey;
     }
@@ -276,7 +267,9 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
     return params.map((argument, index) => ({
       name: !index ? 'Arguments' : '\u200b',
       value: [
-        `\`${argument.name}\` - ${argument.type.flat(2).join('')} ${argument.default ? `= ${argument.default}` : ''}`,
+        `\`${argument.name}\` - ${argument.type.flat(2).join('')} ${
+          argument.default ? `= ${argument.default}` : ''
+        }`.trim(),
         `${argument.description}`
       ].join('\n'),
       inline: true

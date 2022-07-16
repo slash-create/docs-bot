@@ -1,5 +1,5 @@
 import bent from 'bent';
-import { simpleFilter } from 'fuzzy';
+import { filter } from 'fuzzy';
 
 import { AnyStructureDescriptor, DocumentationRoot } from './metaTypes';
 
@@ -25,7 +25,7 @@ export default class TypeNavigator {
   static data: DocumentationRoot;
   static typeMap: TypeMap;
 
-  static knownSymbols = ['#', '~', '$'];
+  static knownSymbols = { METHOD: '#', PROP: '~', EVENT: '$' };
 
   static get classes() {
     return this.data.classes;
@@ -41,17 +41,20 @@ export default class TypeNavigator {
   }
 
   static getMethodDescriptor(className: string, methodName: string) {
-    const [classIndex, methodIndex] = this.typeMap.method[`${className}#${methodName}`];
+    const resolvedKey = this.joinKey([className, methodName], this.knownSymbols.METHOD);
+    const [classIndex, methodIndex] = this.typeMap.method[resolvedKey];
     return this.classes[classIndex].methods[methodIndex];
   }
 
   static getEventDescriptor(className: string, eventName: string) {
-    const [classIndex, eventIndex] = this.typeMap.event[`${className}$${eventName}`];
+    const resolvedKey = this.joinKey([className, eventName], this.knownSymbols.EVENT);
+    const [classIndex, eventIndex] = this.typeMap.event[resolvedKey];
     return this.classes[classIndex].events[eventIndex];
   }
 
   static getPropDescriptor(className: string, propName: string) {
-    const [classIndex, propIndex] = this.typeMap.prop[`${className}~${propName}`];
+    const resolvedKey = this.joinKey([className, propName], this.knownSymbols.PROP);
+    const [classIndex, propIndex] = this.typeMap.prop[resolvedKey];
     return this.classes[classIndex].props[propIndex];
   }
 
@@ -60,10 +63,19 @@ export default class TypeNavigator {
     return this.data.typedefs[typeIndex];
   }
 
+  /**
+   * Autocomplete queries have a uniform query handler meaning typeName is never specified until the main command is run.
+   * To work around this, the entry path can be provided as an array of strings - then filter out the null values before joining them with the {@param connector}.
+   * This does result in some unnecessary repititions of 'key resolving' to ensure the accessor is both valid and existing within the target container.
+   */
+  static joinKey = (entryPath: string[], connector: string) => entryPath.filter(Boolean).join(connector);
+
   static findFirstMatch(className: string, typeName?: string): AnyStructureDescriptor {
-    for (const connector of this.knownSymbols) {
-      const assumedKey = [className, typeName].join(connector);
+    for (const connector of Object.values(this.knownSymbols)) {
+      const assumedKey = this.joinKey([className, typeName], connector);
       const entityType = this.typeMap.all[assumedKey];
+
+      console.log(`[QUERY] ${assumedKey} := ${entityType}`);
 
       switch (entityType) {
         case undefined:
@@ -85,8 +97,8 @@ export default class TypeNavigator {
     return undefined;
   }
 
-  static fuzzyFilter = (entityPath: string[], typeFilter: keyof TypeMap = 'all', limit: number = 25) =>
-    simpleFilter(entityPath.join('*'), Object.keys(this.typeMap[typeFilter])).slice(0, limit);
+  static fuzzyFilter = (entityPath: string, typeFilter: keyof TypeMap = 'all', limit: number = 25) =>
+    filter(entityPath, Object.keys(this.typeMap[typeFilter])).slice(0, limit);
 
   static {
     getJSON(targetURI).then((doc: DocumentationRoot) => {

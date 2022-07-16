@@ -85,7 +85,7 @@ export interface TypeDescriptor {
 
 export enum TypeSymbol {
   method = '#',
-  member = '~',
+  prop = '~',
   event = '$'
 }
 
