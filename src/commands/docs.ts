@@ -179,8 +179,6 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
       .map((entry) => {
         const typeEntry = TypeNavigator.findFirstMatch(entry.string);
 
-        console.log(entry.string, typeEntry);
-
         const params = 'params' in typeEntry ? typeEntry.params : [];
         const hasArguments = params && params.length > 0;
 

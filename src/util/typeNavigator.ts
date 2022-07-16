@@ -75,8 +75,6 @@ export default class TypeNavigator {
       const assumedKey = this.joinKey([className, typeName], connector);
       const entityType = this.typeMap.all[assumedKey];
 
-      console.log(`[QUERY] ${assumedKey} := ${entityType}`);
-
       switch (entityType) {
         case undefined:
         case null:
@@ -118,14 +116,12 @@ export default class TypeNavigator {
     };
 
     for (const [classIndex, classEntry] of this.data.classes.entries()) {
-      // console.log(`[Class] ${classEntry.name} at ${classIndex}`);
       this.typeMap.class[classEntry.name] = classIndex;
       this.typeMap.all[classEntry.name] = 'class';
 
       if (classEntry.events) {
         for (const [eventIndex, eventEntry] of classEntry.events.entries()) {
           const key = `${classEntry.name}$${eventEntry.name}`;
-          // console.log(`[Event] ${key} at ${eventIndex}`);
           this.typeMap.event[key] = [classIndex, eventIndex];
           this.typeMap.all[key] = 'event';
         }
@@ -135,7 +131,6 @@ export default class TypeNavigator {
         for (const [methodIndex, methodEntry] of classEntry.methods.entries()) {
           const shouldSkip = exclusionRegex.test(methodEntry.name);
           const key = `${classEntry.name}#${methodEntry.name}`;
-          // console.log(`[Method] ${key} at ${methodIndex}  ${shouldSkip ? ', Skipping...' : ''}`);
           if (!shouldSkip) {
             this.typeMap.method[key] = [classIndex, methodIndex];
             this.typeMap.all[key] = 'method';
@@ -147,7 +142,6 @@ export default class TypeNavigator {
         for (const [propIndex, propEntry] of classEntry.props.entries()) {
           const shouldSkip = exclusionRegex.test(propEntry.name);
           const key = `${classEntry.name}~${propEntry.name}`;
-          // console.log(`[Member] ${key} at ${propIndex} ${shouldSkip ? ', Skipping...' : ''}`);
           if (!shouldSkip) {
             this.typeMap.prop[key] = [classIndex, propIndex];
             this.typeMap.all[key] = 'prop';
@@ -157,7 +151,6 @@ export default class TypeNavigator {
     }
 
     for (const [typeIndex, typeEntry] of this.data.typedefs.entries()) {
-      // console.log(`[Type] ${typeEntry.name} at ${typeIndex}`);
       this.typeMap.typedef[typeEntry.name] = typeIndex;
       this.typeMap.all[typeEntry.name] = 'typedef';
     }
