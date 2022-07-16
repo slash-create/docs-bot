@@ -193,6 +193,8 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
+    if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
+
     const calledType = ctx.subcommands[0];
     const options = ctx.options[calledType];
 
@@ -222,7 +224,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
 
         Object.assign(embed, {
           title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
-          fields: this.getClassEntityFields(descriptor)
+          fields: this.getClassEntityFields(descriptor, 'construct' in descriptor)
         });
 
         fragments[0] = descriptor.name;
@@ -250,15 +252,21 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
           description: typeEntry.description
         });
 
+        if ('type' in typeEntry)
+          embed.fields.push({
+            name: 'Type',
+            value: `${this.resolveType(typeEntry.type)}`
+          });
+
         if ('params' in typeEntry)
           // calledType !== 'prop'
-          embed.fields = this.getArgumentEntityFields(typeEntry);
+          embed.fields.push(...this.getArgumentEntityFields(typeEntry));
 
         if ('returns' in typeEntry)
           // calledType === 'method'
           embed.fields.push({
             name: 'Returns',
-            value: `\`${typeEntry.returns.flat(2).join('')}\``
+            value: `\`${this.resolveType(typeEntry.returns)}\``
           });
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
@@ -307,19 +315,18 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
     return params.map((argument, index) => ({
       name: !index ? 'Arguments' : '\u200b',
       value: [
-        `\`${argument.name}\` - ${argument.type.flat(2).join('')} ${
+        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
           argument.default ? `= ${argument.default}` : ''
         }`.trim(),
         `${argument.description}`
-      ].join('\n'),
-      inline: true
+      ].join('\n')
     }));
   };
 
-  private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor): EmbedField[] =>
+  private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor, isClass: boolean): EmbedField[] =>
     [
       'props' in classEntry && {
-        name: `📏 Properies (${classEntry.props.length})`,
+        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${classEntry.props.length})`,
         value:
           classEntry.props
             .filter((propEntry) => !propEntry.name.startsWith('_'))
@@ -328,7 +335,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         inline: true
       },
       'methods' in classEntry && {
-        name: `🔧 Methods (${classEntry.methods.length})`,
+        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${classEntry.methods.length})`,
         value:
           classEntry.methods
             .filter((methodEntry) => methodEntry.access !== 'private' || !methodEntry.name.startsWith('_'))
@@ -338,7 +345,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         inline: true
       },
       'events' in classEntry && {
-        name: `⌚ Events (${classEntry.events.length})`,
+        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${classEntry.events.length})`,
         value:
           classEntry.events
             // implied of the existance as a a class
@@ -348,4 +355,16 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         inline: true
       }
     ].filter((field) => field && field.value !== 'None');
+
+  private resolveType = (type: string[][][]): string =>
+    type
+      .flat(2)
+      // .map((fragment) => {
+      //  console.log(fragment, TypeNavigator.data.typedefs[fragment]);
+      //  return TypeNavigator.data.typedefs[fragment] ? `[${fragment}](${buildDocsLink('typdef', fragment)})` : fragment;
+      // })
+      .join('');
+
+  private buildCommandMention = (commandName: string) =>
+    `</${this.commandName} ${commandName}:${this.ids.get('global')}>`;
 }
