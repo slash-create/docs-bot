@@ -1,5 +1,4 @@
 import { Client as ErisClient } from 'eris';
-import fuzzy from 'fuzzy';
 import {
   SlashCommand,
   CommandOptionType,
@@ -17,17 +16,14 @@ import { SC_RED } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
   AnyStructureDescriptor,
-  ChildStructureDescriptor,
   ClassDescriptor,
   EventDescriptor,
   MethodDescriptor,
-  TypeRoute,
   TypeSource,
   TypeSymbol
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
 
-import { typeMap, fetchMetadata } from '../util/typeResolution';
 
 export default class DocumentationCommand extends SlashCommand<ErisClient> {
   constructor(creator: SlashCreator) {
