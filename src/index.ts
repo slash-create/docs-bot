@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
-import { SlashCreator, GatewayServer } from 'slash-create';
-import { Client as ErisClient } from 'eris';
+import { SlashCreator, FastifyServer } from 'slash-create';
 import path from 'path';
 import CatLoggr from 'cat-loggr/ts';
 
@@ -30,18 +29,8 @@ creator.on('commandRun', (command, _, ctx) =>
 creator.on('commandRegister', (command) => logger.info(`Registered command ${command.commandName}`));
 creator.on('commandError', (command, error) => logger.error(`Command ${command.commandName}:`, error));
 
+// eslint-disable-next-line prettier/prettier
 creator
-  .withServer(
-    new GatewayServer((handler) => {
-      client.on('rawWS', (packet: any) => {
-        if (packet.t === 'INTERACTION_CREATE') {
-          handler(packet.d);
-        }
-      });
-    })
-  )
-  // .startServer()
-  .registerCommandsIn(path.join(__dirname, 'commands'));
-
-// console.log(`Starting server at "localhost:${creator.options.serverPort}/interactions"`);
-client.connect();
+  .withServer(new FastifyServer())
+  .registerCommandsIn(path.join(__dirname, 'commands'))
+  .startServer();
