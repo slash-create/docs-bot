@@ -213,7 +213,12 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
       case 'class':
       case 'typedef': {
         const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as ClassDescriptor | TypeDescriptor;
-        typeMeta = descriptor.meta;
+        try {
+          typeMeta = descriptor.meta;
+        } catch {
+          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
+          return;
+        }
 
         Object.assign(embed, {
           title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
@@ -226,12 +231,17 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
       default: {
         if (options[calledType] === 'null') {
           // yes... litereal null
-          ctx.send('Invalid query.', { ephemeral: true });
+          ctx.send('Invalid query, please check arguments.', { ephemeral: true });
           return;
         }
 
         const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
-        typeMeta = typeEntry.meta;
+        try {
+          typeMeta = typeEntry.meta;
+        } catch {
+          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
+          return;
+        }
 
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
