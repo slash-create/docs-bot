@@ -1,10 +1,17 @@
 import { Client as ErisClient } from 'eris';
-import { AutocompleteChoice, AutocompleteContext, CommandContext, CommandOptionType, SlashCommand } from 'slash-create';
+import {
+  AutocompleteChoice,
+  AutocompleteContext,
+  CommandContext,
+  CommandOptionType,
+  SlashCommand,
+  SlashCreator
+} from 'slash-create';
 
 import TypeNavigator from '../util/typeNavigator';
 
 export default class SearchCommand extends SlashCommand<ErisClient> {
-  constructor(creator) {
+  constructor(creator: SlashCreator) {
     super(creator, {
       name: 'search',
       description: 'Search for a documentation entry.',

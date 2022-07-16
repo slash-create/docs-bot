@@ -1,29 +1,32 @@
 import { Client as ErisClient } from 'eris';
 import {
-  SlashCommand,
-  CommandOptionType,
-  SlashCreator,
-  CommandContext,
+  AutocompleteChoice,
   AutocompleteContext,
-  ComponentType,
-  ComponentActionRow,
   ButtonStyle,
-  MessageEmbedOptions,
+  CommandContext,
+  CommandOptionType,
+  ComponentActionRow,
+  ComponentType,
   EmbedField,
-  AutocompleteChoice
+  MessageEmbedOptions,
+  MessageOptions,
+  SlashCommand,
+  SlashCreator
 } from 'slash-create';
+
 import { SC_RED } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
-  AnyStructureDescriptor,
+  ChildStructureDescriptor,
   ClassDescriptor,
   EventDescriptor,
+  FileMeta,
   MethodDescriptor,
+  TypeDescriptor,
   TypeSource,
   TypeSymbol
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
-
 
 export default class DocumentationCommand extends SlashCommand<ErisClient> {
   constructor(creator: SlashCreator) {
@@ -108,21 +111,21 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
               autocomplete: true
             }
           ]
-        } // ,
-        // {
-        //  name: 'type',
-        //  description: 'The type to retrieve.',
-        //  type: CommandOptionType.SUB_COMMAND,
-        //  options: [
-        //    {
-        //      name: 'type',
-        //      description: 'The type to retrieve.',
-        //      type: CommandOptionType.STRING,
-        //      required: true,
-        //      autocomplete: true
-        //    }
-        //  ]
-        // }
+        },
+        {
+          name: 'typedef',
+          description: 'Get entry for a type definition.',
+          type: CommandOptionType.SUB_COMMAND,
+          options: [
+            {
+              name: 'typedef',
+              description: 'The type to retrieve.',
+              type: CommandOptionType.STRING,
+              required: true,
+              autocomplete: true
+            }
+          ]
+        }
       ]
     });
   }
@@ -140,22 +143,22 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
 
         return matchingKeys.map((value) => ({ name: value.string, value: value.string }));
       }
-      // case 'type': {
-      //  const results = TypeNavigator.fuzzyFilter(focusedOption, 'typedef');
-      //  return results.map((value) => ({ name: value.string, value: value.string }));
-      // }
+      case 'typedef': {
+        const results = TypeNavigator.fuzzyFilter(focusedOption, 'typedef');
+        return results.map((value) => ({ name: value.string, value: value.string }));
+      }
       case 'event':
       case 'method':
       case 'prop':
-        return this.commonAutocompleteSearch(ctx);
+        return this.commonAutocompleteSearch(ctx, command);
       default: {
         return [];
       }
     }
   }
 
-  async commonAutocompleteSearch(ctx: AutocompleteContext) {
-    const options = ctx.options[ctx.subcommands[0]];
+  async commonAutocompleteSearch(ctx: AutocompleteContext, command: string) {
+    const options = ctx.options[command];
     if (!options.class)
       return [
         {
@@ -189,47 +192,77 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
       .filter(Boolean);
   }
 
-  async run(ctx: CommandContext) {
+  async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
     const calledType = ctx.subcommands[0];
     const options = ctx.options[calledType];
 
-    if (calledType === 'class') {
-      const classEntry = TypeNavigator.getClassDescriptor(options.class);
+    const embed: MessageEmbedOptions = {
+      color: SC_RED,
+      fields: [],
+      timestamp: new Date(ctx.invokedAt),
+      footer: {
+        text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
+        icon_url: ctx.user.avatarURL
+      }
+    };
 
-      const embed: MessageEmbedOptions = {
-        color: SC_RED,
-        title: `${classEntry.name}${classEntry.extends ? ` *extends \`${classEntry.extends.join('')}\`*` : ''}`,
-        description: classEntry.description,
-        timestamp: new Date(ctx.invokedAt),
-        fields: this.getClassEntityFields(classEntry),
-        footer: {
-          text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
-          icon_url: ctx.user.avatarURL
-        }
-      };
+    const fragments: [string, string?] = [null, null];
+    let typeMeta: FileMeta = null;
 
-      try {
-        await ctx.send({
-          embeds: [embed],
-          components: this.getLinkComponents([classEntry.name], classEntry)
+    switch (calledType) {
+      case 'class':
+      case 'typedef': {
+        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as ClassDescriptor | TypeDescriptor;
+        typeMeta = descriptor.meta;
+
+        Object.assign(embed, {
+          title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
+          fields: this.getClassEntityFields(descriptor)
         });
-      } catch (e) {
-        console.log(e);
-        console.log(JSON.stringify(e.response.errors.data, null, 2));
-      }
-    } else {
-      if (options[calledType] === 'null') {
-        // yes... litereal null
-        return ctx.send('Invalid query.', { ephemeral: true });
-      }
 
-      const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
+        fragments.push(descriptor.name);
+        break;
+      }
+      default: {
+        if (options[calledType] === 'null') {
+          // yes... litereal null
+          ctx.send('Invalid query.', { ephemeral: true });
+          return;
+        }
 
-      return combinedKey;
+        const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
+        typeMeta = typeEntry.meta;
+
+        const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
+
+        Object.assign(embed, {
+          title: `${combinedKey}`,
+          description: typeEntry.description
+        });
+
+        if ('params' in typeEntry)
+          // calledType !== 'prop'
+          embed.fields = this.getArgumentEntityFields(typeEntry);
+
+        if ('returns' in typeEntry)
+          // calledType === 'method'
+          embed.fields.push({
+            name: 'Returns',
+            value: `\`${typeEntry.returns.flat(2).join('')}\``
+          });
+
+        // exact check, if typeEntry were a class i'd do instance of... maybe
+        fragments.push((calledType === 'event' ? 'e-' : '') + options[calledType]);
+      }
     }
+
+    return {
+      embeds: [embed],
+      components: this.getLinkComponents(fragments, typeMeta)
+    };
   }
 
-  private getLinkComponents = (target: [string, string?], typeEntry: AnyStructureDescriptor): ComponentActionRow[] => [
+  private getLinkComponents = (target: [string, string?], typeMeta: FileMeta): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
       components: [
@@ -245,7 +278,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
         {
           type: ComponentType.BUTTON,
           style: ButtonStyle.LINK,
-          url: buildGitHubLink(typeEntry.meta),
+          url: buildGitHubLink(typeMeta),
           label: 'Open GitHub',
           emoji: {
             name: '📂'
@@ -272,7 +305,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
     }));
   };
 
-  private getClassEntityFields = (classEntry: ClassDescriptor): EmbedField[] =>
+  private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor): EmbedField[] =>
     [
       'props' in classEntry && {
         name: `📏 Properies (${classEntry.props.length})`,

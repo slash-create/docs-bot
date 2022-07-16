@@ -48,6 +48,7 @@ export interface FileMeta {
 
 export interface MethodDescriptor {
   deprecated: boolean;
+  description: string;
   access?: 'private';
   emits: []; // unknown
   examples: []; // unknown
