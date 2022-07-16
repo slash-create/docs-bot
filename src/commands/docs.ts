@@ -225,7 +225,7 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
           fields: this.getClassEntityFields(descriptor)
         });
 
-        fragments.push(descriptor.name);
+        fragments[0] = descriptor.name;
         break;
       }
       default: {
@@ -262,7 +262,8 @@ export default class DocumentationCommand extends SlashCommand<ErisClient> {
           });
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
-        fragments.push((calledType === 'event' ? 'e-' : '') + options[calledType]);
+        fragments[0] = options.class;
+        fragments[1] = (calledType === 'event' ? 'e-' : '') + options[calledType];
       }
     }
 
