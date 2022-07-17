@@ -48,7 +48,7 @@ export default class SearchCommand extends SlashCommand {
 
     const command = ['/docs', subtype, `${subtype}: ${second || first}`];
 
-    if (second) command.splice(1, 0, 'class');
+    if (second) command.splice(2, 0, `class: ${first}`);
 
     ctx.send(
       [
