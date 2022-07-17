@@ -135,7 +135,7 @@ export default class DocumentationCommand extends SlashCommand {
 
     switch (ctx.focused) {
       case 'class': {
-        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class', 25);
+        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class');
 
         if (command === 'event')
           matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
