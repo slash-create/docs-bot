@@ -10,6 +10,8 @@ import {
 import TypeNavigator from '../util/typeNavigator';
 
 export default class SearchCommand extends SlashCommand {
+  private _docsCommand: SlashCommand;
+
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'search',
@@ -24,6 +26,10 @@ export default class SearchCommand extends SlashCommand {
         }
       ]
     });
+  }
+
+  get docsCommand() {
+    return (this._docsCommand ??= this.creator.commands.find((command) => command.commandName === 'docs'));
   }
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
@@ -48,7 +54,7 @@ export default class SearchCommand extends SlashCommand {
       [
         `You selected \`${query}\`, this is not a entry retrieval command.`,
         '*Entries found in this command may include internal structures not included on the primary command.*',
-        `> Please use \`${command.join(' ')}\` - </docs ${subtype}:${this.ids.get('global')}>.`
+        `> Please use \`${command.join(' ')}\` - </docs ${subtype}:${this.docsCommand.ids.get('global')}>.`
       ].join('\n'),
       { ephemeral: true }
     );
