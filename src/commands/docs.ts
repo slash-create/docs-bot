@@ -13,15 +13,13 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { SC_RED, titleCase } from '../util/common';
-import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
+import { SC_RED, standardObjects, titleCase } from '../util/common';
+import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
   CallableDescriptor,
   ChildStructureDescriptor,
   ClassDescriptor,
-  EventDescriptor,
   FileMeta,
-  MethodDescriptor,
   TypeDescriptor,
   TypeSource,
   TypeSymbol
@@ -265,7 +263,7 @@ export default class DocumentationCommand extends SlashCommand {
           // calledType === 'method'
           embed.fields.push({
             name: 'Returns',
-            value: `\`${this.resolveType(typeEntry.returns)}\``
+            value: `${this.resolveType(typeEntry.returns)}`
           });
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
@@ -324,6 +322,7 @@ export default class DocumentationCommand extends SlashCommand {
 
   private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor, isClass: boolean): EmbedField[] =>
     [
+      // ...('construct' in classEntry && this.getArgumentEntityFields(classEntry.construct, 'constructor')),
       'props' in classEntry && {
         name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${classEntry.props.length})`,
         value:
@@ -358,11 +357,13 @@ export default class DocumentationCommand extends SlashCommand {
   private resolveType = (type: string[][][]): string =>
     type
       .flat(2)
-      // .map((fragment) => {
-      //  console.log(fragment, TypeNavigator.data.typedefs[fragment]);
-      //  return TypeNavigator.data.typedefs[fragment] ? `[${fragment}](${buildDocsLink('typdef', fragment)})` : fragment;
-      // })
-      .join('');
+      .map((fragment) => {
+        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typdef', fragment)})`;
+        else if (fragment in standardObjects) return `[${fragment}](${BASE_MDN_URL}/${standardObjects[fragment]})`;
+        return fragment;
+      })
+      .join('')
+      .replace(/(<|>)/g, (brace) => `\\${brace}`);
 
   private buildCommandMention = (commandName: string) =>
     `</${this.commandName} ${commandName}:${this.ids.get('global')}>`;
