@@ -34,18 +34,23 @@ export default class SearchCommand extends SlashCommand {
     return results.map((entry) => ({ name: `${entry.string} {score: ${entry.score}}`, value: entry.string }));
   }
 
-  async run(ctx: CommandContext): Promise<string> {
-    await ctx.defer(true);
+  async run(ctx: CommandContext): Promise<void> {
+    const { query } = ctx.options as { query: string };
 
-    const { query } = ctx.options;
-
-    const [, first, second] = query.match(/(\w+)[#~$](\w+)/);
+    const [first, second = ''] = query.split(/[#$~]/);
     const subtype = TypeNavigator.typeMap.all[query];
 
-    return [
-      `You selected \`${query}\`, this is not a entry retrieval command.`,
-      '*Entries found in this command may include internal structures not included on the primary command.*',
-      `> Please use \`/docs ${subtype} class: ${first}${second ? ` ${subtype}: ${second}` : ''}\`.`
-    ].join('\n');
+    const command = ['/docs', subtype, `${subtype}: ${second || first}`];
+
+    if (second) command.splice(1, 0, 'class');
+
+    ctx.send(
+      [
+        `You selected \`${query}\`, this is not a entry retrieval command.`,
+        '*Entries found in this command may include internal structures not included on the primary command.*',
+        `> Please use \`${command.join(' ')}\` - </docs ${subtype}:${this.ids.get('global')}>.`
+      ].join('\n'),
+      { ephemeral: true }
+    );
   }
 }
