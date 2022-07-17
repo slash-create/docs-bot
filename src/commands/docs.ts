@@ -13,9 +13,10 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { SC_RED } from '../util/common';
+import { SC_RED, titleCase } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
+  CallableDescriptor,
   ChildStructureDescriptor,
   ClassDescriptor,
   EventDescriptor,
@@ -258,7 +259,7 @@ export default class DocumentationCommand extends SlashCommand {
 
         if ('params' in typeEntry)
           // calledType !== 'prop'
-          embed.fields.push(...this.getArgumentEntityFields(typeEntry));
+          embed.fields.push(...this.getArgumentEntityFields(typeEntry, calledType));
 
         if ('returns' in typeEntry)
           // calledType === 'method'
@@ -305,13 +306,13 @@ export default class DocumentationCommand extends SlashCommand {
     }
   ];
 
-  private getArgumentEntityFields = (argumentParent: MethodDescriptor | EventDescriptor): EmbedField[] => {
+  private getArgumentEntityFields = (argumentParent: CallableDescriptor, entityType: string): EmbedField[] => {
     const { params } = argumentParent;
 
     if (!params.length) return [];
 
     return params.map((argument, index) => ({
-      name: !index ? 'Arguments' : '\u200b',
+      name: index === 0 ? `${titleCase(entityType)} Arguments` : '\u200b',
       value: [
         `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
           argument.default ? `= ${argument.default}` : ''
