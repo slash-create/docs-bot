@@ -3,6 +3,7 @@ import {
   AutocompleteContext,
   CommandContext,
   CommandOptionType,
+  MessageOptions,
   SlashCommand,
   SlashCreator
 } from 'slash-create';
@@ -40,7 +41,7 @@ export default class SearchCommand extends SlashCommand {
     return results.map((entry) => ({ name: `${entry.string} {score: ${entry.score}}`, value: entry.string }));
   }
 
-  async run(ctx: CommandContext): Promise<void> {
+  async run(ctx: CommandContext): Promise<MessageOptions> {
     const { query } = ctx.options as { query: string };
 
     const [first, second = ''] = query.split(/[#$~]/);
@@ -50,13 +51,13 @@ export default class SearchCommand extends SlashCommand {
 
     if (second) command.splice(2, 0, `class: ${first}`);
 
-    ctx.send(
-      [
+    return {
+      ephemeral: true,
+      content: [
         `You selected \`${query}\`, this is not a entry retrieval command.`,
         '*Entries found in this command may include internal structures not included on the primary command.*',
         `> Please use \`${command.join(' ')}\` - </docs ${subtype}:${this.docsCommand.ids.get('global')}>.`
-      ].join('\n'),
-      { ephemeral: true }
-    );
+      ].join('\n')
+    };
   }
 }
