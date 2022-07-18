@@ -274,18 +274,22 @@ export default class DocumentationCommand extends SlashCommand {
 
     return {
       embeds: [embed],
-      components: this.getLinkComponents(fragments, typeMeta)
+      components: this.getLinkComponents(fragments, typeMeta, calledType === 'typedef')
     };
   }
 
-  private getLinkComponents = (target: [string, string?], typeMeta: FileMeta): ComponentActionRow[] => [
+  private getLinkComponents = (
+    target: [string, string?],
+    typeMeta: FileMeta,
+    isTypedef: boolean
+  ): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
       components: [
         {
           type: ComponentType.BUTTON,
           style: ButtonStyle.LINK,
-          url: buildDocsLink('class', ...target),
+          url: buildDocsLink(isTypedef ? 'typedef' : 'class', ...target),
           label: 'Open Docs',
           emoji: {
             name: '📕'
