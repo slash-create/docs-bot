@@ -13,7 +13,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { SC_RED } from '../util/common';
+import { SC_RED, docsOptionFactory, shareOption } from '../util/common';
 import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
   ChildStructureDescriptor,
@@ -38,92 +38,31 @@ export default class DocumentationCommand extends SlashCommand {
           name: 'class',
           description: 'Get entry for a class.',
           type: CommandOptionType.SUB_COMMAND,
-          options: [
-            {
-              name: 'class',
-              description: 'The class to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            }
-          ]
+          options: [docsOptionFactory('class'), shareOption]
         },
         {
           name: 'event',
-          description: 'The event to retrieve.',
+          description: 'Get entry for an event.',
           type: CommandOptionType.SUB_COMMAND,
-          options: [
-            {
-              name: 'class',
-              description: 'The class to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            },
-            {
-              name: 'event',
-              description: 'The event to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            }
-          ]
+          options: [docsOptionFactory('class'), docsOptionFactory('event'), shareOption]
         },
         {
           name: 'method',
           type: CommandOptionType.SUB_COMMAND,
           description: 'Get entry for a method.',
-          options: [
-            {
-              name: 'class',
-              description: 'The class to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            },
-            {
-              name: 'method',
-              description: 'The method to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            }
-          ]
+          options: [docsOptionFactory('class'), docsOptionFactory('method'), shareOption]
         },
         {
           name: 'prop',
           description: 'Get entry for a class prop.',
           type: CommandOptionType.SUB_COMMAND,
-          options: [
-            {
-              name: 'class',
-              description: 'The class to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            },
-            {
-              name: 'prop',
-              description: 'The prop to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            }
-          ]
+          options: [docsOptionFactory('class'), docsOptionFactory('prop'), shareOption]
         },
         {
           name: 'typedef',
           description: 'Get entry for a type definition.',
           type: CommandOptionType.SUB_COMMAND,
-          options: [
-            {
-              name: 'typedef',
-              description: 'The type to retrieve.',
-              type: CommandOptionType.STRING,
-              required: true,
-              autocomplete: true
-            }
-          ]
+          options: [docsOptionFactory('typedef'), shareOption]
         }
       ]
     });
@@ -199,10 +138,12 @@ export default class DocumentationCommand extends SlashCommand {
       color: SC_RED,
       fields: [],
       timestamp: new Date(ctx.invokedAt),
-      footer: {
-        text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
-        icon_url: ctx.user.avatarURL
-      }
+      ...(options.share && {
+        footer: {
+          text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
+          icon_url: ctx.user.avatarURL
+        }
+      })
     };
 
     const fragments: [string, string?] = [null, null];
@@ -274,7 +215,8 @@ export default class DocumentationCommand extends SlashCommand {
 
     return {
       embeds: [embed],
-      components: this.getLinkComponents(fragments, typeMeta)
+      components: this.getLinkComponents(fragments, typeMeta),
+      ephemeral: !options.share
     };
   }
 
