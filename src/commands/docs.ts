@@ -13,14 +13,13 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { SC_RED } from '../util/common';
-import { buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
+import { SC_RED, standardObjects, titleCase } from '../util/common';
+import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
+  CallableDescriptor,
   ChildStructureDescriptor,
   ClassDescriptor,
-  EventDescriptor,
   FileMeta,
-  MethodDescriptor,
   TypeDescriptor,
   TypeSource,
   TypeSymbol
@@ -135,7 +134,7 @@ export default class DocumentationCommand extends SlashCommand {
 
     switch (ctx.focused) {
       case 'class': {
-        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class', 25);
+        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class');
 
         if (command === 'event')
           matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
@@ -221,6 +220,7 @@ export default class DocumentationCommand extends SlashCommand {
 
         Object.assign(embed, {
           title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
+          description: descriptor.description,
           fields: this.getClassEntityFields(descriptor, 'construct' in descriptor)
         });
 
@@ -257,7 +257,7 @@ export default class DocumentationCommand extends SlashCommand {
 
         if ('params' in typeEntry)
           // calledType !== 'prop'
-          embed.fields.push(...this.getArgumentEntityFields(typeEntry));
+          embed.fields.push(...this.getArgumentEntityFields(typeEntry, calledType));
 
         if ('returns' in typeEntry)
           // calledType === 'method'
@@ -308,13 +308,13 @@ export default class DocumentationCommand extends SlashCommand {
     }
   ];
 
-  private getArgumentEntityFields = (argumentParent: MethodDescriptor | EventDescriptor): EmbedField[] => {
+  private getArgumentEntityFields = (argumentParent: CallableDescriptor, entityType: string): EmbedField[] => {
     const { params } = argumentParent;
 
     if (!params.length) return [];
 
     return params.map((argument, index) => ({
-      name: !index ? 'Arguments' : '\u200b',
+      name: index === 0 ? `${titleCase(entityType)} Arguments` : '\u200b',
       value: [
         `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
           argument.default ? `= ${argument.default}` : ''
@@ -326,6 +326,7 @@ export default class DocumentationCommand extends SlashCommand {
 
   private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor, isClass: boolean): EmbedField[] =>
     [
+      // ...('construct' in classEntry && this.getArgumentEntityFields(classEntry.construct, 'constructor')),
       'props' in classEntry && {
         name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${classEntry.props.length})`,
         value:
@@ -360,11 +361,13 @@ export default class DocumentationCommand extends SlashCommand {
   private resolveType = (type: string[][][]): string =>
     type
       .flat(2)
-      // .map((fragment) => {
-      //  console.log(fragment, TypeNavigator.data.typedefs[fragment]);
-      //  return TypeNavigator.data.typedefs[fragment] ? `[${fragment}](${buildDocsLink('typdef', fragment)})` : fragment;
-      // })
-      .join('');
+      .map((fragment) => {
+        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typdef', fragment)})`;
+        else if (fragment in standardObjects) return `[${fragment}](${BASE_MDN_URL}/${standardObjects[fragment]})`;
+        return fragment;
+      })
+      .join('')
+      .replace(/(<|>)/g, (brace) => `\\${brace}`);
 
   private buildCommandMention = (commandName: string) =>
     `</${this.commandName} ${commandName}:${this.ids.get('global')}>`;
