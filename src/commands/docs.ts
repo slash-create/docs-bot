@@ -252,7 +252,7 @@ export default class DocumentationCommand extends SlashCommand {
         if ('type' in typeEntry)
           embed.fields.push({
             name: 'Type',
-            value: `${this.resolveType(typeEntry.type)}`
+            value: this.resolveType(typeEntry.type)
           });
 
         if ('params' in typeEntry)
@@ -263,7 +263,7 @@ export default class DocumentationCommand extends SlashCommand {
           // calledType === 'method'
           embed.fields.push({
             name: 'Returns',
-            value: `${this.resolveType(typeEntry.returns)}`
+            value: this.resolveType(typeEntry.returns)
           });
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
@@ -274,18 +274,22 @@ export default class DocumentationCommand extends SlashCommand {
 
     return {
       embeds: [embed],
-      components: this.getLinkComponents(fragments, typeMeta)
+      components: this.getLinkComponents(fragments, typeMeta, calledType === 'typedef')
     };
   }
 
-  private getLinkComponents = (target: [string, string?], typeMeta: FileMeta): ComponentActionRow[] => [
+  private getLinkComponents = (
+    target: [string, string?],
+    typeMeta: FileMeta,
+    isTypedef: boolean
+  ): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
       components: [
         {
           type: ComponentType.BUTTON,
           style: ButtonStyle.LINK,
-          url: buildDocsLink('class', ...target),
+          url: buildDocsLink(isTypedef ? 'typedef' : 'class', ...target),
           label: 'Open Docs',
           emoji: {
             name: '📕'
