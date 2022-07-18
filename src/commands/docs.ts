@@ -252,7 +252,7 @@ export default class DocumentationCommand extends SlashCommand {
         if ('type' in typeEntry)
           embed.fields.push({
             name: 'Type',
-            value: `${this.resolveType(typeEntry.type)}`
+            value: this.resolveType(typeEntry.type)
           });
 
         if ('params' in typeEntry)
@@ -263,7 +263,7 @@ export default class DocumentationCommand extends SlashCommand {
           // calledType === 'method'
           embed.fields.push({
             name: 'Returns',
-            value: `\`${this.resolveType(typeEntry.returns)}\``
+            value: this.resolveType(typeEntry.returns)
           });
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
