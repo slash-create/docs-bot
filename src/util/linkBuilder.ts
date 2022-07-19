@@ -3,6 +3,7 @@ import { FileMeta } from './metaTypes';
 export const BRANCH = `master`; // possiblity to add branch support further in, but i wouldn't see much point if discord keeps changing stuff...
 export const BASE_DOCS_URL = `https://slash-create.js.org/#/docs/main/${BRANCH}`;
 export const BASE_GITHUB_URL = `https://github.com/Snazzah/slash-create/blob/${BRANCH}`;
+export const BASE_MDN_URL = `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects`;
 
 export function buildDocsLink(calledType: string, entity: string, scrollTo?: string) {
   return `${BASE_DOCS_URL}/${calledType}/${entity}${scrollTo ? `?scrollTo=${scrollTo}` : ''}`;
