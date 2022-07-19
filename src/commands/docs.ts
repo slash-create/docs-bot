@@ -215,16 +215,12 @@ export default class DocumentationCommand extends SlashCommand {
 
     return {
       embeds: [embed],
-      ephemeral: !options.share
+      ephemeral: !options.share,
       components: this.getLinkComponents(fragments, typeMeta, calledType === 'typedef')
     };
   }
 
-  private getLinkComponents = (
-    target: [string, string?],
-    meta: FileMeta,
-    isTypedef: boolean
-  ): ComponentActionRow[] => [
+  private getLinkComponents = (target: [string, string?], meta: FileMeta, isTypedef: boolean): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
       components: [
