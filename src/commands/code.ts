@@ -88,7 +88,7 @@ export default class CodeCommand extends SlashCommand {
       content = lines.join('\n');
     }
 
-    ctx.send({
+    return {
       content,
       components: [
         {
@@ -106,6 +106,6 @@ export default class CodeCommand extends SlashCommand {
           ]
         }
       ]
-    });
+    };
   }
 }
