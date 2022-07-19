@@ -94,7 +94,7 @@ export default class DocumentationCommand extends SlashCommand {
     }
   }
 
-  async commonAutocompleteSearch(ctx: AutocompleteContext, command: string) {
+  async commonAutocompleteSearch(ctx: AutocompleteContext, command: string): Promise<AutocompleteChoice[]> {
     const options = ctx.options[command];
     if (!options.class)
       return [

@@ -4,7 +4,7 @@ module.exports = {
     es6: true,
     node: true
   },
-  extends: ['eslint:recommended', 'prettier/@typescript-eslint', 'plugin:prettier/recommended'],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   globals: {
     NodeJS: true,
     BigInt: true
@@ -16,7 +16,7 @@ module.exports = {
   },
   plugins: ['@typescript-eslint'],
   rules: {
-    'prettier/prettier': 'warn',
+    'prettier/prettier': 'off',
     'no-cond-assign': [2, 'except-parens'],
     'no-unused-vars': 0,
     '@typescript-eslint/no-unused-vars': 1,
