@@ -53,6 +53,7 @@ export class FileCache {
         logger.info(`[Cache] Found '${path}' cached at '${ref}'`);
         return entry;
       }
+      logger.info(`[Cache] Found outdated '${path}', fetching newer entry`);
       this.cache.delete(`${ref}:${path}`);
     }
 

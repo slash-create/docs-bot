@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { SlashCreator, FastifyServer } from 'slash-create';
 import path from 'path';
 import logger from './util/logger';
+import { hashMapToString } from './util/common';
 
 let dotenvPath = path.join(process.cwd(), '.env');
 if (path.parse(process.cwd()).name === 'dist') dotenvPath = path.join(process.cwd(), '..', '.env');
@@ -20,13 +21,14 @@ creator.on('debug', (message) => logger.log(message));
 creator.on('warn', (message) => logger.warn(message));
 creator.on('error', (error) => logger.error(error));
 creator.on('synced', () => logger.info('Commands synced!'));
-creator.on('commandRun', (command, _, ctx) =>
-  logger.info(`${ctx.user.username}#${ctx.user.discriminator} (${ctx.user.id}) ran command ${command.commandName}`)
-);
+creator.on('commandRun', (command, _, ctx) => {
+  const options = ctx.subcommands.reduce((target, command) => target[command], ctx.options);
+  const commandString = ['/' + command.commandName, ctx.subcommands.join(' '), hashMapToString(options)];
+  logger.info(`${ctx.user.username}#${ctx.user.discriminator} (${ctx.user.id}) ran ${commandString.join(' ')}`);
+});
 creator.on('commandRegister', (command) => logger.info(`Registered command ${command.commandName}`));
 creator.on('commandError', (command, error) => logger.error(`Command ${command.commandName}:`, error));
 
-// eslint-disable-next-line prettier/prettier
 creator
   .withServer(new FastifyServer())
   .registerCommandsIn(path.join(__dirname, 'commands'))

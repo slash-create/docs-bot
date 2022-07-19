@@ -167,16 +167,16 @@ export default class CodeCommand extends SlashCommand {
 
     const lineSelection = lines.slice(startLine - 1, endLine);
 
+    let actualStart = startLine;
+    let actualEnd = endLine;
+    let trimTopThisTime = false;
+
     let content = [
-      this.generateContentHeader(file, [startLine], [endLine]),
+      this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
       '```js',
       lineSelection.map((line, index) => this.generateCodeLine(line, startLine + index, endLine, true)).join('\n'),
       '```'
     ].join('\n');
-
-    let actualStart = startLine;
-    let actualEnd = endLine;
-    let trimTopThisTime = false;
 
     // #region content trim loop
     while (content.length > 2000) {
@@ -220,13 +220,13 @@ export default class CodeCommand extends SlashCommand {
     };
   }
 
-  private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean = true) =>
-    [includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */` : '', line].join(' ');
+  private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean) =>
+    (includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */` : '') + line;
 
   private generateContentHeader = (
     file: string,
-    [start, actualStart = start - 1]: [number, number?],
-    [end, actualEnd]: [number, number?]
+    [start, actualStart]: [number, number],
+    [end, actualEnd]: [number, number]
   ) => `\`${file}\` - Lines ${this.getAdjustment(start, actualStart + 1)} to ${this.getAdjustment(end, actualEnd)}`;
 
   private getAdjustment = (original: number, actual?: number) =>
