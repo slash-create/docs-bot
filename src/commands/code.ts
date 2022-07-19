@@ -17,8 +17,6 @@ import { buildGitHubLink, rawContentLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';
 
 export default class CodeCommand extends SlashCommand {
-  offset = 50;
-
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'code',
@@ -60,13 +58,12 @@ export default class CodeCommand extends SlashCommand {
     let endLine = meta.line + this.offset;
 
     if (endLine > lines.length) {
-      startLine -= endLine - this.offset;
+      startLine -= endLine - startLine;
       endLine = lines.length;
     }
 
     if (startLine <= 0) startLine = 0;
 
-    const lineOffset = meta.line + this.offset;
     const lineSelection = lines.slice(startLine, endLine);
 
     let content = [
