@@ -278,7 +278,7 @@ export default class DocumentationCommand extends SlashCommand {
     };
   }
 
-  private getLinkComponents = (target: [string, string?], typeMeta: FileMeta): ComponentActionRow[] => [
+  private getLinkComponents = (target: [string, string?], meta: FileMeta): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
       components: [
@@ -294,7 +294,7 @@ export default class DocumentationCommand extends SlashCommand {
         {
           type: ComponentType.BUTTON,
           style: ButtonStyle.LINK,
-          url: buildGitHubLink(typeMeta),
+          url: buildGitHubLink(`${meta.path}/${meta.file}`, [meta.line]),
           label: 'Open GitHub',
           emoji: {
             name: '📂'

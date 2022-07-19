@@ -1,4 +1,5 @@
 import bent from 'bent';
+import { filter as fuzzyFilter } from 'fuzzy';
 
 const getText = bent('string');
 
@@ -23,39 +24,139 @@ export default class CodeCommand extends SlashCommand {
       description: 'Get a section of code from the source repository.',
       options: [
         {
-          name: 'query',
-          description: 'The query to search all entries.',
-          type: CommandOptionType.STRING,
-          autocomplete: true,
-          required: true
+          name: 'entity',
+          description: 'Fetch a file from a type entity.',
+          type: CommandOptionType.SUB_COMMAND,
+          options: [
+            {
+              name: 'query',
+              description: 'The query to search all entries.',
+              type: CommandOptionType.STRING,
+              autocomplete: true,
+              required: true
+            },
+            {
+              name: 'around',
+              description: 'How many lines to retrieve around the entity. (default = 3)',
+              min_value: 1,
+              type: CommandOptionType.INTEGER
+            },
+            {
+              name: 'share',
+              description: 'Share your result with others in the channel. (default = false)',
+              type: CommandOptionType.BOOLEAN
+            }
+          ]
+        },
+        {
+          name: 'lines',
+          description: 'Fetch specific lines from the source code.',
+          type: CommandOptionType.SUB_COMMAND,
+          options: [
+            {
+              name: 'query',
+              description: 'The query to search all entries.',
+              type: CommandOptionType.STRING,
+              autocomplete: true,
+              required: true
+            },
+            {
+              name: 'start',
+              description: 'Where to select from.',
+              type: CommandOptionType.INTEGER,
+              min_value: 1,
+              required: true
+            },
+            {
+              name: 'end',
+              description: 'Where to select to.',
+              type: CommandOptionType.INTEGER,
+              min_value: 1,
+              required: true
+            },
+            {
+              name: 'share',
+              description: 'Share your result with others in the channel. (default = false)',
+              type: CommandOptionType.BOOLEAN
+            }
+          ]
         }
       ]
     });
   }
 
-  autocomplete = async ({ options }: AutocompleteContext): Promise<AutocompleteChoice[]> =>
-    TypeNavigator.fuzzyFilter(options.query as string).map<AutocompleteChoice>((entry) => ({
-      name: `${entry.string} {score: ${entry.score}}`,
-      value: entry.string
-    }));
+  autocomplete = async ({ options, subcommands }: AutocompleteContext): Promise<AutocompleteChoice[]> =>
+    (subcommands[0] === 'entity'
+      ? TypeNavigator.fuzzyFilter(options.entity.query as string) ||
+        Object.keys(TypeNavigator.typeMap.all).map((string) => ({ string, score: 0 }))
+      : fuzzyFilter(options.lines.query, TypeNavigator.knownFiles) ||
+        TypeNavigator.knownFiles.map((string) => ({ string, score: 0 }))
+    )
+      .map<AutocompleteChoice>((entry) => ({
+        name: `${entry.string} ${entry.score ? `{score: ${entry.score}}` : ''}`.trim(),
+        value: entry.string
+      }))
+      .slice(0, 25);
 
   async run(ctx: CommandContext): Promise<MessageOptions | void | string> {
-    const { query } = ctx.options;
+    const subCommand = ctx.subcommands[0];
+    const options = ctx.options[subCommand];
 
-    if (!(query in TypeNavigator.typeMap.all)) {
-      return {
-        content: 'Symbol not found',
-        ephemeral: true
-      };
+    let file: string = null,
+      startLine = 0,
+      endLine = Infinity;
+
+    switch (subCommand) {
+      case 'entity': {
+        const { query, around = 3 } = options;
+
+        if (!(query in TypeNavigator.typeMap.all))
+          return {
+            content: `Entity \`${query}\` was not found in type map.`,
+            ephemeral: true
+          };
+
+        const { meta } = TypeNavigator.findFirstMatch(query);
+
+        startLine = meta.line - around - 1;
+        endLine = meta.line + around;
+        file = `${meta.path}/${meta.file}`;
+
+        break;
+      }
+
+      case 'lines': {
+        let { query, start, end } = options;
+
+        if (!TypeNavigator.knownFiles.includes(query))
+          return {
+            content: `Could not find ${query} in known files.`,
+            ephemeral: true
+          };
+
+        if (end < start) [start, end] = [end, start]; // swap if inverted
+
+        startLine = start - 1;
+        endLine = end || start + 6;
+        file = query;
+
+        break;
+      }
     }
 
-    const { meta } = TypeNavigator.findFirstMatch(query);
-    const file = `${meta.path}/${meta.file}`;
     const res: string = await getText(`${rawContentLink}/${file}`);
-
     const lines = res.split('\n');
-    let startLine = meta.line - 1; // slice offset
-    let endLine = meta.line + this.offset;
+
+    if (startLine > lines.length) {
+      return {
+        ephemeral: true,
+        content: [
+          `**Failover:** Line selection out of bounds.`,
+          `> Start Line: \`${startLine + 1}\``,
+          `> Total Lines: \`${lines.length}\``
+        ].join('\n')
+      };
+    }
 
     if (endLine > lines.length) {
       startLine -= endLine - startLine;
@@ -75,18 +176,37 @@ export default class CodeCommand extends SlashCommand {
       '```'
     ].join('\n');
 
-    let actualEnd = lineOffset;
+    let actualStart = startLine;
+    let actualEnd = endLine;
+    let trimTopThisTime = false;
 
+    // #region content trim loop
     while (content.length > 2000) {
+      const adjustment = (original: number, adjusted: number) =>
+        original === adjusted ? `\`${original}\`` : `~~\`${original}\`~~ \`${adjusted}\``;
+
       const lines = content.split('\n');
       lines.splice(-2, 1);
-      actualEnd--;
-      lines[0] = `\`${file}\` - Lines \`${startLine + 1}\` to ~~\`${endLine}\`~~ \`${actualEnd}\``;
+
+      // #region trim location
+      trimTopThisTime = !trimTopThisTime;
+      if (subCommand === 'entity' && trimTopThisTime) {
+        lines.splice(2, 1);
+        actualStart++;
+      } else {
+        lines.splice(-2, 1);
+        actualEnd--;
+      }
+      // #endregion
+
+      lines[0] = `\`${file}\` - Lines ${adjustment(startLine, actualStart)} to ${adjustment(endLine, actualEnd)}`;
       content = lines.join('\n');
     }
+    // #endregion
 
     return {
       content,
+      ephemeral: !options.share,
       components: [
         {
           type: ComponentType.ACTION_ROW,
@@ -94,7 +214,7 @@ export default class CodeCommand extends SlashCommand {
             {
               type: ComponentType.BUTTON,
               style: ButtonStyle.LINK,
-              url: buildGitHubLink(meta),
+              url: buildGitHubLink(file, [startLine, actualEnd]),
               label: 'Open GitHub',
               emoji: {
                 name: '📂'

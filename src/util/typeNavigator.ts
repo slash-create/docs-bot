@@ -24,6 +24,7 @@ export default class TypeNavigator {
   static indexSymbol = Symbol('index');
   static data: DocumentationRoot;
   static typeMap: TypeMap;
+  static knownFiles: string[] = [];
 
   static knownSymbols = { METHOD: '#', PROP: '~', EVENT: '$' };
 
@@ -98,6 +99,11 @@ export default class TypeNavigator {
   static fuzzyFilter = (entityPath: string, typeFilter: keyof TypeMap = 'all', limit: number = 25) =>
     filter(entityPath, Object.keys(this.typeMap[typeFilter])).slice(0, limit);
 
+  static registerKnownFile(path: string | string[]) {
+    const [filePath] = (Array.isArray(path) ? path.join('/') : path).split('#');
+    if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
+  }
+
   static {
     getJSON(targetURI).then((doc: DocumentationRoot) => {
       this.data = doc;
@@ -118,12 +124,14 @@ export default class TypeNavigator {
     for (const [classIndex, classEntry] of this.data.classes.entries()) {
       this.typeMap.class[classEntry.name] = classIndex;
       this.typeMap.all[classEntry.name] = 'class';
+      this.registerKnownFile([classEntry.meta.path, classEntry.meta.file]);
 
       if (classEntry.events) {
         for (const [eventIndex, eventEntry] of classEntry.events.entries()) {
           const key = `${classEntry.name}$${eventEntry.name}`;
           this.typeMap.event[key] = [classIndex, eventIndex];
           this.typeMap.all[key] = 'event';
+          this.registerKnownFile([eventEntry.meta.path, eventEntry.meta.file]);
         }
       }
 
@@ -135,6 +143,7 @@ export default class TypeNavigator {
             this.typeMap.method[key] = [classIndex, methodIndex];
             this.typeMap.all[key] = 'method';
           }
+          this.registerKnownFile([methodEntry.meta.path, methodEntry.meta.file]);
         }
       }
 
@@ -146,6 +155,7 @@ export default class TypeNavigator {
             this.typeMap.prop[key] = [classIndex, propIndex];
             this.typeMap.all[key] = 'prop';
           }
+          this.registerKnownFile([propEntry.meta.path, propEntry.meta.file]);
         }
       }
     }
@@ -153,6 +163,7 @@ export default class TypeNavigator {
     for (const [typeIndex, typeEntry] of this.data.typedefs.entries()) {
       this.typeMap.typedef[typeEntry.name] = typeIndex;
       this.typeMap.all[typeEntry.name] = 'typedef';
+      this.registerKnownFile([typeEntry.meta.path, typeEntry.meta.file]);
     }
   }
 }
