@@ -110,3 +110,4 @@ export interface TypeOutcome {
 
 export type ChildStructureDescriptor = MethodDescriptor | MemberDescriptor | EventDescriptor;
 export type AnyStructureDescriptor = ChildStructureDescriptor | ClassDescriptor | TypeDescriptor;
+export type CallableDescriptor = MethodDescriptor | EventDescriptor | ClassConstructor;
