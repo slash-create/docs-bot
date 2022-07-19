@@ -165,7 +165,7 @@ export default class CodeCommand extends SlashCommand {
       endLine = lines.length;
     }
 
-    if (startLine <= 0) startLine = 0;
+    if (startLine <= 1) startLine = 1;
 
     const lineSelection = lines.slice(startLine - 1, endLine);
 
