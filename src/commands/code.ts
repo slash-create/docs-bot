@@ -172,7 +172,7 @@ export default class CodeCommand extends SlashCommand {
     let content = [
       this.generateContentHeader(file, [startLine], [endLine]),
       '```js',
-      lineSelection.map((line, index) => this.generateCodeLine(line, startLine + index, true)).join('\n'),
+      lineSelection.map((line, index) => this.generateCodeLine(line, startLine + index, endLine, true)).join('\n'),
       '```'
     ].join('\n');
 
@@ -222,8 +222,8 @@ export default class CodeCommand extends SlashCommand {
     };
   }
 
-  private generateCodeLine = (line: string, index: number, includeNumbers: boolean = true) =>
-    [includeNumbers ? `/* ${index + 1} */` : '', line].join(' ');
+  private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean = true) =>
+    [includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */` : '', line].join(' ');
 
   private generateContentHeader = (
     file: string,
