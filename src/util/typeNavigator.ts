@@ -101,6 +101,7 @@ export default class TypeNavigator {
 
   static registerKnownFile(path: string | string[]) {
     const [filePath] = (Array.isArray(path) ? path.join('/') : path).split('#');
+    if (!filePath.startsWith('src')) return;
     if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
   }
 
