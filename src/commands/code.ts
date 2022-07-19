@@ -170,11 +170,9 @@ export default class CodeCommand extends SlashCommand {
     const lineSelection = lines.slice(startLine, endLine);
 
     let content = [
-      `\`${file}\` - Lines \`${startLine + 1}\` to \`${endLine}\``,
+      this.generateContentHeader(file, [startLine], [endLine]),
       '```js',
-      lineSelection
-        .map((line, index) => `/* ${`${startLine + index + 1}`.padStart(`${endLine}`.length, ' ')} */ ${line}`)
-        .join('\n'),
+      lineSelection.map((line, index) => this.generateCodeLine(line, startLine + index, true)).join('\n'),
       '```'
     ].join('\n');
 
@@ -184,11 +182,7 @@ export default class CodeCommand extends SlashCommand {
 
     // #region content trim loop
     while (content.length > 2000) {
-      const adjustment = (original: number, adjusted: number) =>
-        original === adjusted ? `\`${original}\`` : `~~\`${original}\`~~ \`${adjusted}\``;
-
       const lines = content.split('\n');
-      lines.splice(-2, 1);
 
       // #region trim location
       trimTopThisTime = !trimTopThisTime;
@@ -201,7 +195,7 @@ export default class CodeCommand extends SlashCommand {
       }
       // #endregion
 
-      lines[0] = `\`${file}\` - Lines ${adjustment(startLine, actualStart)} to ${adjustment(endLine, actualEnd)}`;
+      lines[0] = this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]);
       content = lines.join('\n');
     }
     // #endregion
@@ -227,4 +221,16 @@ export default class CodeCommand extends SlashCommand {
       ]
     };
   }
+
+  private generateCodeLine = (line: string, index: number, includeNumbers: boolean = true) =>
+    [includeNumbers ? `/* ${index + 1} */` : '', line].join(' ');
+
+  private generateContentHeader = (
+    file: string,
+    [start, actualStart = start - 1]: [number, number?],
+    [end, actualEnd]: [number, number?]
+  ) => `\`${file}\` - Lines ${this.getAdjustment(start, actualStart + 1)} to ${this.getAdjustment(end, actualEnd)}`;
+
+  private getAdjustment = (original: number, actual?: number) =>
+    !actual || original === actual ? `\`${original}\`` : `~~\`${original}\`~~ \`${actual}\``;
 }
