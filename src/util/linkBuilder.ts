@@ -14,4 +14,4 @@ export function buildGitHubLink(file: string, lineRange: [number, number?]) {
   return `https://github.com/${REMOTE_LOCATION}/blob/${BRANCH}/${file}#${lineString}`;
 }
 
-export const rawContentLink = `https://raw.githubusercontent.com/${REMOTE_LOCATION}/${BRANCH}`;
+export const rawContentLink = `https://raw.githubusercontent.com/${REMOTE_LOCATION}`;

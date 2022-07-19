@@ -1,7 +1,4 @@
-import bent from 'bent';
 import { filter as fuzzyFilter } from 'fuzzy';
-
-const getText = bent('string');
 
 import {
   AutocompleteChoice,
@@ -14,7 +11,8 @@ import {
   SlashCommand,
   SlashCreator
 } from 'slash-create';
-import { buildGitHubLink, rawContentLink } from '../util/linkBuilder';
+import fileCache from '../util/fileCache';
+import { buildGitHubLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';
 
 export default class CodeCommand extends SlashCommand {
@@ -146,8 +144,8 @@ export default class CodeCommand extends SlashCommand {
       }
     }
 
-    const res: string = await getText(`${rawContentLink}/${file}`);
-    const lines = res.split('\n');
+    const { body } = await fileCache.fetch(file, 'master');
+    const lines = body.split('\n');
 
     if (startLine > lines.length) {
       return {
