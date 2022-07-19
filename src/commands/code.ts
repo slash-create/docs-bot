@@ -167,7 +167,7 @@ export default class CodeCommand extends SlashCommand {
 
     if (startLine <= 0) startLine = 0;
 
-    const lineSelection = lines.slice(startLine, endLine);
+    const lineSelection = lines.slice(startLine - 1, endLine);
 
     let content = [
       this.generateContentHeader(file, [startLine], [endLine]),
@@ -185,7 +185,6 @@ export default class CodeCommand extends SlashCommand {
       const lines = content.split('\n');
 
       // #region trim location
-      trimTopThisTime = !trimTopThisTime;
       if (subCommand === 'entity' && trimTopThisTime) {
         lines.splice(2, 1);
         actualStart++;
@@ -193,6 +192,7 @@ export default class CodeCommand extends SlashCommand {
         lines.splice(-2, 1);
         actualEnd--;
       }
+      trimTopThisTime = !trimTopThisTime;
       // #endregion
 
       lines[0] = this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]);
