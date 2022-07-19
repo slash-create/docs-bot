@@ -118,8 +118,10 @@ export default class CodeCommand extends SlashCommand {
 
         const { meta } = TypeNavigator.findFirstMatch(query);
 
-        startLine = meta.line - around - 1;
-        endLine = meta.line + around;
+        const buffer = Math.floor(around / 2);
+
+        startLine = meta.line - buffer;
+        endLine = meta.line + buffer;
         file = `${meta.path}/${meta.file}`;
 
         break;
