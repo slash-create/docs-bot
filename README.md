@@ -1,9 +1,15 @@
 # docs-bot
 A service that handles navigation of a docgen project manifest.
 
-## Commands
+## Functionality
 
-> **All arguments are required.**
+> - `*` - Autocompletion available
+> - `?` - Optional
+> **All other arguments are required, unless otherwise specified.**
+
+- For `/docs` specifically, if searching for an entry other than the `class` itself - and the option is available, the `class` **must** be searched for first (except `typedef`, they share runtime flow).
+
+### Command List
 
 ```sh
 $ npx slash-up list
@@ -42,6 +48,17 @@ $ npx slash-up list
         end integer - Where to select to.
         share? boolean - Share your result with others in the channel. (default = false)
 ```
+
+### Showcase
+
+- `/docs class class: SlashCreator`
+
+  ![Docs_Class Command](assets/commands/docs-class.png)
+
+- `/docs method class: MessageInteractionContext method: registerComponentFrom`
+
+  ![Docs_Method Command](assets/commands/docs-method.png)
+
 
 ## Installation
 ```sh
