@@ -227,7 +227,7 @@ export default class CodeCommand extends SlashCommand {
     file: string,
     [start, actualStart]: [number, number],
     [end, actualEnd]: [number, number]
-  ) => `\`${file}\` - Lines ${this.getAdjustment(start, actualStart + 1)} to ${this.getAdjustment(end, actualEnd)}`;
+  ) => `\`${file}\` - Lines ${this.getAdjustment(start, actualStart)} to ${this.getAdjustment(end, actualEnd)}`;
 
   private getAdjustment = (original: number, actual?: number) =>
     !actual || original === actual ? `\`${original}\`` : `~~\`${original}\`~~ \`${actual}\``;
