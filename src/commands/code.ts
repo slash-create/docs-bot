@@ -136,7 +136,7 @@ export default class CodeCommand extends SlashCommand {
 
         if (end < start) [start, end] = [end, start]; // swap if inverted
 
-        startLine = start - 1;
+        startLine = start;
         endLine = end;
         file = query;
 
