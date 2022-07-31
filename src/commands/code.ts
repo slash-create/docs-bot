@@ -12,7 +12,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { queryOption, shareOption } from '../util/common';
+import { lineNumbersOption, queryOption, shareOption } from '../util/common';
 import fileCache from '../util/fileCache';
 import { buildGitHubLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';
@@ -35,7 +35,8 @@ export default class CodeCommand extends SlashCommand {
               min_value: 1,
               type: CommandOptionType.INTEGER
             },
-            shareOption
+            shareOption,
+            lineNumbersOption
           ]
         },
         {
@@ -58,7 +59,8 @@ export default class CodeCommand extends SlashCommand {
               min_value: 1,
               required: true
             },
-            shareOption
+            shareOption,
+            lineNumbersOption
           ]
         }
       ]
@@ -81,6 +83,8 @@ export default class CodeCommand extends SlashCommand {
   async run(ctx: CommandContext): Promise<MessageOptions | void | string> {
     const subCommand = ctx.subcommands[0];
     const options = ctx.options[subCommand];
+
+    const shouldHaveLineNumbers = options.line_numbers ?? false;
 
     let file: string = null,
       startLine = 0,
@@ -156,7 +160,9 @@ export default class CodeCommand extends SlashCommand {
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
       '```js',
-      lineSelection.map((line, index) => this.generateCodeLine(line, startLine + index, endLine, true)).join('\n'),
+      lineSelection
+        .map((line, index) => this.generateCodeLine(line, startLine + index, endLine, shouldHaveLineNumbers))
+        .join('\n'),
       '```'
     ].join('\n');
 

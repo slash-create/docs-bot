@@ -18,6 +18,12 @@ export const queryOption: ApplicationCommandOption = {
   required: true
 };
 
+export const lineNumbersOption: ApplicationCommandOption = {
+  name: 'line_numbers',
+  description: 'Include line numbers in code response. (default=false)',
+  type: CommandOptionType.BOOLEAN
+};
+
 export const docsOptionFactory = (option: string): ApplicationCommandOptionAutocompletable => ({
   name: option,
   description: `The ${option} to retrieve.`,
