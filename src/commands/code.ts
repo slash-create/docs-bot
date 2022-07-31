@@ -12,7 +12,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { queryOption, shareOption } from '../util/common';
+import { lineNumbersOption, queryOption, shareOption } from '../util/common';
 import fileCache from '../util/fileCache';
 import { buildGitHubLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';
@@ -35,7 +35,8 @@ export default class CodeCommand extends SlashCommand {
               min_value: 1,
               type: CommandOptionType.INTEGER
             },
-            shareOption
+            shareOption,
+            lineNumbersOption
           ]
         },
         {
@@ -58,7 +59,8 @@ export default class CodeCommand extends SlashCommand {
               min_value: 1,
               required: true
             },
-            shareOption
+            shareOption,
+            lineNumbersOption
           ]
         }
       ]
@@ -82,6 +84,8 @@ export default class CodeCommand extends SlashCommand {
     const subCommand = ctx.subcommands[0];
     const options = ctx.options[subCommand];
 
+    const shouldHaveLineNumbers = options.line_numbers ?? false;
+
     let file: string = null,
       startLine = 0,
       endLine = Infinity;
@@ -98,7 +102,7 @@ export default class CodeCommand extends SlashCommand {
 
         const { meta } = TypeNavigator.findFirstMatch(query);
 
-        const buffer = Math.floor(around / 2);
+        const buffer = Math.trunc(around / 2) + (around % 2);
 
         startLine = meta.line - buffer;
         endLine = meta.line + buffer;
@@ -140,27 +144,32 @@ export default class CodeCommand extends SlashCommand {
       };
     }
 
-    if (endLine > lines.length) {
-      startLine -= endLine - startLine;
-      endLine = lines.length;
-    }
-
-    if (startLine <= 1) startLine = 1;
-
-    const lineSelection = lines.slice(startLine - 1, endLine);
-
     let actualStart = startLine;
     let actualEnd = endLine;
-    let trimTopThisTime = false;
+
+    if (actualEnd > lines.length) {
+      actualStart -= actualEnd - actualStart;
+      actualEnd = lines.length;
+    }
+
+    if (actualStart <= 1) actualStart = 1;
+
+    if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
+    if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
+
+    const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
       '```js',
-      lineSelection.map((line, index) => this.generateCodeLine(line, startLine + index, endLine, true)).join('\n'),
+      lineSelection
+        .map((line, index) => this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers))
+        .join('\n'),
       '```'
     ].join('\n');
 
     // #region content trim loop
+    let trimTopThisTime = false;
     while (content.length > 2000) {
       const lines = content.split('\n');
 
@@ -190,7 +199,7 @@ export default class CodeCommand extends SlashCommand {
             {
               type: ComponentType.BUTTON,
               style: ButtonStyle.LINK,
-              url: buildGitHubLink(file, [startLine, actualEnd]),
+              url: buildGitHubLink(file, [actualStart, actualEnd]),
               label: 'Open GitHub',
               emoji: {
                 name: '📂'
@@ -203,7 +212,7 @@ export default class CodeCommand extends SlashCommand {
   }
 
   private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean) =>
-    (includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */` : '') + line;
+    (includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */ ` : '') + line;
 
   private generateContentHeader = (
     file: string,
