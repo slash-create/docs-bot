@@ -10,6 +10,14 @@ export const shareOption: ApplicationCommandOption = {
   required: false
 };
 
+export const queryOption: ApplicationCommandOption = {
+  name: 'query',
+  description: 'The query to search all entries.',
+  type: CommandOptionType.STRING,
+  autocomplete: true,
+  required: true
+};
+
 export const docsOptionFactory = (option: string): ApplicationCommandOptionAutocompletable => ({
   name: option,
   description: `The ${option} to retrieve.`,

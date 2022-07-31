@@ -11,6 +11,8 @@ import {
   SlashCommand,
   SlashCreator
 } from 'slash-create';
+
+import { queryOption, shareOption } from '../util/common';
 import fileCache from '../util/fileCache';
 import { buildGitHubLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';
@@ -26,24 +28,14 @@ export default class CodeCommand extends SlashCommand {
           description: 'Fetch a file from a type entity.',
           type: CommandOptionType.SUB_COMMAND,
           options: [
-            {
-              name: 'query',
-              description: 'The query to search all entries.',
-              type: CommandOptionType.STRING,
-              autocomplete: true,
-              required: true
-            },
+            queryOption,
             {
               name: 'around',
               description: 'How many lines to retrieve around the entity. (default = 3)',
               min_value: 1,
               type: CommandOptionType.INTEGER
             },
-            {
-              name: 'share',
-              description: 'Share your result with others in the channel. (default = false)',
-              type: CommandOptionType.BOOLEAN
-            }
+            shareOption
           ]
         },
         {
@@ -51,13 +43,7 @@ export default class CodeCommand extends SlashCommand {
           description: 'Fetch specific lines from the source code.',
           type: CommandOptionType.SUB_COMMAND,
           options: [
-            {
-              name: 'query',
-              description: 'The query to search all entries.',
-              type: CommandOptionType.STRING,
-              autocomplete: true,
-              required: true
-            },
+            queryOption,
             {
               name: 'start',
               description: 'Where to select from.',
@@ -72,11 +58,7 @@ export default class CodeCommand extends SlashCommand {
               min_value: 1,
               required: true
             },
-            {
-              name: 'share',
-              description: 'Share your result with others in the channel. (default = false)',
-              type: CommandOptionType.BOOLEAN
-            }
+            shareOption
           ]
         }
       ]
