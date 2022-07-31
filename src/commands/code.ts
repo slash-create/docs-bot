@@ -157,6 +157,9 @@ export default class CodeCommand extends SlashCommand {
     let actualEnd = endLine;
     let trimTopThisTime = false;
 
+    if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
+    if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
+
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
       '```js',
