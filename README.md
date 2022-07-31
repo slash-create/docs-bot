@@ -34,19 +34,21 @@ $ npx slash-up list
         typedef* string - The typedef to retrieve.
         share? boolean - Share the outcome of your query to the channel.
 
-/search - Search for a documentation entry.
-    query* string - The query to search all entries.
-
 /code - Get a section of code from the source repository.
     entity - Fetch a file from a type entity.
         query* string - The query to search all entries.
         around? integer - How many lines to retrieve around the entity. (default = 3)
-        share? boolean - Share your result with others in the channel. (default = false)
+        share? boolean - Share the outcome of your query to the channel.
+        line_numbers? boolean - Include line numbers in code response. (default=false)
     lines - Fetch specific lines from the source code.
         query* string - The query to search all entries.
         start integer - Where to select from.
         end integer - Where to select to.
-        share? boolean - Share your result with others in the channel. (default = false)
+        share? boolean - Share the outcome of your query to the channel.
+        line_numbers? boolean - Include line numbers in code response. (default=false)
+
+/search - Search for a documentation entry. (1003238111637155905)
+    query* string - The query to search all entries.
 ```
 
 ### Showcase
