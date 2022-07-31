@@ -203,7 +203,7 @@ export default class CodeCommand extends SlashCommand {
   }
 
   private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean) =>
-    (includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */` : '') + line;
+    (includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */ ` : '') + line;
 
   private generateContentHeader = (
     file: string,
