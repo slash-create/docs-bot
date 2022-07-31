@@ -144,32 +144,32 @@ export default class CodeCommand extends SlashCommand {
       };
     }
 
-    if (endLine > lines.length) {
-      startLine -= endLine - startLine;
-      endLine = lines.length;
-    }
-
-    if (startLine <= 1) startLine = 1;
-
-    const lineSelection = lines.slice(startLine - 1, endLine);
-
     let actualStart = startLine;
     let actualEnd = endLine;
-    let trimTopThisTime = false;
+
+    if (actualEnd > lines.length) {
+      actualStart -= actualEnd - actualStart;
+      actualEnd = lines.length;
+    }
+
+    if (actualStart <= 1) actualStart = 1;
 
     if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
     if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
+
+    const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
       '```js',
       lineSelection
-        .map((line, index) => this.generateCodeLine(line, startLine + index, endLine, shouldHaveLineNumbers))
+        .map((line, index) => this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers))
         .join('\n'),
       '```'
     ].join('\n');
 
     // #region content trim loop
+    let trimTopThisTime = false;
     while (content.length > 2000) {
       const lines = content.split('\n');
 
@@ -199,7 +199,7 @@ export default class CodeCommand extends SlashCommand {
             {
               type: ComponentType.BUTTON,
               style: ButtonStyle.LINK,
-              url: buildGitHubLink(file, [startLine, actualEnd]),
+              url: buildGitHubLink(file, [actualStart, actualEnd]),
               label: 'Open GitHub',
               emoji: {
                 name: '📂'
