@@ -2,12 +2,12 @@ import {
   AutocompleteChoice,
   AutocompleteContext,
   CommandContext,
-  CommandOptionType,
   MessageOptions,
   SlashCommand,
   SlashCreator
 } from 'slash-create';
 
+import { queryOption } from '../util/common';
 import TypeNavigator from '../util/typeNavigator';
 
 export default class SearchCommand extends SlashCommand {
@@ -17,15 +17,7 @@ export default class SearchCommand extends SlashCommand {
     super(creator, {
       name: 'search',
       description: 'Search for a documentation entry.',
-      options: [
-        {
-          name: 'query',
-          description: 'The query to search all entries.',
-          type: CommandOptionType.STRING,
-          autocomplete: true,
-          required: true
-        }
-      ]
+      options: [queryOption]
     });
   }
 
