@@ -156,7 +156,7 @@ export default class DocumentationCommand extends SlashCommand {
     switch (calledType) {
       case 'class':
       case 'typedef': {
-        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as ClassDescriptor | TypeDescriptor;
+        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as AnyParentDescriptor;
         try {
           typeMeta = descriptor.meta;
         } catch {
