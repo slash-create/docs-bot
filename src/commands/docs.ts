@@ -138,11 +138,9 @@ export default class DocumentationCommand extends SlashCommand {
       color: SC_RED,
       fields: [],
       timestamp: new Date(ctx.invokedAt),
-      ...(options.share && {
-        footer: {
-          text: titleCase(calledType)
-        }
-      })
+      footer: {
+        text: titleCase(calledType)
+      }
     };
 
     if (options.share) {
