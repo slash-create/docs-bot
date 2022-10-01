@@ -156,8 +156,10 @@ export default class DocumentationCommand extends SlashCommand {
         try {
           typeMeta = descriptor.meta;
         } catch {
-          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
-          return;
+          return {
+            content: 'Entity was `null`, please check arguments.',
+            ephemeral: true
+          };
         }
 
         embed.title = `${descriptor.name}${
@@ -171,17 +173,22 @@ export default class DocumentationCommand extends SlashCommand {
       }
       default: {
         if (options[calledType] === 'null') {
-          // yes... litereal null
-          ctx.send('Invalid query, please check arguments.', { ephemeral: true });
-          return;
+          // yes... literal null
+          return {
+            content: 'Entity was `null`, please check arguments.',
+            ephemeral: true
+          };
         }
 
         const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
         try {
           typeMeta = typeEntry.meta;
         } catch {
-          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
-          return;
+          // second catch, in case the parent entry is null
+          return {
+            content: 'Entity not found, please check arguments.',
+            ephemeral: true
+          };
         }
 
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
