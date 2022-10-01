@@ -77,11 +77,14 @@ export interface ParameterDescriptor {
 
 export interface TypeDescriptor {
   access?: 'private';
-  description: string;
+  description?: string;
   meta: FileMeta;
   name: string;
   see: [];
-  props: MemberDescriptor[];
+  props?: MemberDescriptor[];
+  params?: ParameterDescriptor[];
+  returns?: string[][][];
+  type?: string[][][];
 }
 
 export enum TypeSymbol {
