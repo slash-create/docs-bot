@@ -273,33 +273,33 @@ export default class DocumentationCommand extends SlashCommand {
     }));
   };
 
-  private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor, isClass: boolean): EmbedField[] =>
+  private getClassEntityFields = (parent: AnyParentDescriptor, isClass: boolean): EmbedField[] =>
     [
       // ...('construct' in classEntry && this.getArgumentEntityFields(classEntry.construct, 'constructor')),
-      'props' in classEntry && {
-        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${classEntry.props.length})`,
+      'props' in parent && {
+        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${parent.props.length})`,
         value:
-          classEntry.props
+          parent.props
             .filter((propEntry) => !propEntry.name.startsWith('_'))
             .map(({ name }) => `\`${name}\``)
             .join('\n') || 'None',
         inline: true
       },
-      'methods' in classEntry && {
-        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${classEntry.methods.length})`,
+      'methods' in parent && {
+        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${parent.methods.length})`,
         value:
-          classEntry.methods
+          parent.methods
             .filter((methodEntry) => methodEntry.access !== 'private' || !methodEntry.name.startsWith('_'))
             // .map((methodEntry) => `[${methodEntry.name}](${buildDocsLink('class', className, methodEntry.name)})`)
             .map(({ name }) => `\`${name}\``)
             .join(`\n`) || 'None',
         inline: true
       },
-      'events' in classEntry && {
-        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${classEntry.events.length})`,
+      'events' in parent && {
+        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${parent.events.length})`,
         value:
-          classEntry.events
-            // implied of the existance as a a class
+          parent.events
+            // implied of the existence as a a class
             // .map((eventEntry) => `[${eventEntry.name}](${buildDocsLink('class', typeEntry.name, eventEntry.name)})`)
             .map(({ name }) => `\`${name}\``)
             .join('\n') || 'None',
