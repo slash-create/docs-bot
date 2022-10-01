@@ -180,6 +180,7 @@ export default class DocumentationCommand extends SlashCommand {
           };
         }
 
+        const parentEntry = TypeNavigator.findFirstMatch(options.class) as ClassDescriptor;
         const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
         try {
           typeMeta = typeEntry.meta;
@@ -204,7 +205,7 @@ export default class DocumentationCommand extends SlashCommand {
 
         if ('params' in typeEntry)
           // calledType !== 'prop'
-          embed.fields.push(...this.getArgumentEntityFields(typeEntry, calledType));
+          embed.fields.push(...this.getArgumentEntityFields(parentEntry, typeEntry, calledType));
 
         if ('returns' in typeEntry)
           // calledType === 'method'
@@ -252,8 +253,12 @@ export default class DocumentationCommand extends SlashCommand {
     }
   ];
 
-  private getArgumentEntityFields = (argumentParent: CallableDescriptor, entityType: string): EmbedField[] => {
-    const { params } = argumentParent;
+  private getArgumentEntityFields = (
+    parent: AnyParentDescriptor,
+    argument: CallableDescriptor,
+    entityType: string
+  ): EmbedField[] => {
+    const { params } = argument;
 
     if (!params.length) return [];
 
@@ -263,7 +268,7 @@ export default class DocumentationCommand extends SlashCommand {
         `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
           argument.default ? `= ${argument.default}` : ''
         }`.trim(),
-        `${argument.description}`
+        this.parseDocString(argument.description, parent)
       ].join('\n')
     }));
   };
