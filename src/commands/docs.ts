@@ -166,11 +166,12 @@ export default class DocumentationCommand extends SlashCommand {
           };
         }
 
+        embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
         embed.title = `${descriptor.name}${
           'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''
         }`;
-        embed.description = this.parseDocString(descriptor.description, descriptor);
-        embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
+
+        this.addCommonFields(embed, descriptor);
 
         fragments[0] = descriptor.name;
         break;
@@ -199,24 +200,8 @@ export default class DocumentationCommand extends SlashCommand {
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
         embed.title = combinedKey;
-        embed.description = this.parseDocString(typeEntry.description, parentEntry);
 
-        if ('type' in typeEntry)
-          embed.fields.push({
-            name: 'Type',
-            value: this.resolveType(typeEntry.type)
-          });
-
-        if ('params' in typeEntry)
-          // calledType !== 'prop'
-          embed.fields.push(...this.getArgumentEntityFields(parentEntry, typeEntry, calledType));
-
-        if ('returns' in typeEntry)
-          // calledType === 'method'
-          embed.fields.push({
-            name: 'Returns',
-            value: this.resolveType(typeEntry.returns)
-          });
+        this.addCommonFields(embed, typeEntry, parentEntry);
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
         fragments[0] = options.class;
