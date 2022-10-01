@@ -140,11 +140,15 @@ export default class DocumentationCommand extends SlashCommand {
       timestamp: new Date(ctx.invokedAt),
       ...(options.share && {
         footer: {
-          text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
-          icon_url: ctx.user.avatarURL
+          text: titleCase(calledType)
         }
       })
     };
+
+    if (options.share) {
+      embed.footer.text += ` | Requested by ${ctx.user.username}#${ctx.user.discriminator}`;
+      embed.footer.icon_url = ctx.member ? ctx.member.avatarURL : ctx.user.avatarURL;
+    }
 
     const fragments: [string, string?] = [null, null];
     let typeMeta: FileMeta = null;
