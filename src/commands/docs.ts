@@ -16,6 +16,7 @@ import {
 import { SC_RED, standardObjects, titleCase, docsOptionFactory, shareOption } from '../util/common';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
+  AnyParentDescriptor,
   CallableDescriptor,
   ChildStructureDescriptor,
   ClassDescriptor,
@@ -159,11 +160,11 @@ export default class DocumentationCommand extends SlashCommand {
           return;
         }
 
-        Object.assign(embed, {
-          title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
-          description: descriptor.description,
-          fields: this.getClassEntityFields(descriptor, 'construct' in descriptor)
-        });
+        embed.title = `${descriptor.name}${
+          'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''
+        }`;
+        embed.description = this.parseDocString(descriptor.description, descriptor);
+        embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
 
         fragments[0] = descriptor.name;
         break;
@@ -185,10 +186,8 @@ export default class DocumentationCommand extends SlashCommand {
 
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
-        Object.assign(embed, {
-          title: combinedKey,
-          description: typeEntry.description
-        });
+        embed.title = combinedKey;
+        embed.description = this.parseDocString(typeEntry.description, parentEntry);
 
         if ('type' in typeEntry)
           embed.fields.push({
@@ -296,7 +295,20 @@ export default class DocumentationCommand extends SlashCommand {
       }
     ].filter((field) => field && field.value !== 'None');
 
-  private resolveType = (type: string[][][]): string =>
+  private parseDocString = (docString: string, parentStruct: AnyParentDescriptor): string =>
+    docString
+      .replace(/(?:^|{)@link ([^}]+)(?:}|$)/g, (_, link) => link)
+      .replace(/(?:^|{)@see ([^}]+)(?:}|$)/g, (_, ref) => {
+        let prefix = '';
+
+        if (['#', '~'].some((char) => ref.startsWith(char))) {
+          prefix = parentStruct.name;
+        }
+
+        return this.resolveType([prefix + ref]);
+      });
+
+  private resolveType = (type: string[][][] | string[][] | string[]): string =>
     type
       .flat(2)
       .map((fragment) => {
