@@ -17,11 +17,11 @@ import { SC_RED, standardObjects, titleCase, docsOptionFactory, shareOption } fr
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
   AnyParentDescriptor,
+  AnyStructureDescriptor,
   CallableDescriptor,
   ChildStructureDescriptor,
   ClassDescriptor,
   FileMeta,
-  TypeDescriptor,
   TypeSource,
   TypeSymbol
 } from '../util/metaTypes';
@@ -237,22 +237,18 @@ export default class DocumentationCommand extends SlashCommand {
     }
   ];
 
-  private getArgumentEntityFields = (
-    parent: AnyParentDescriptor,
-    argument: CallableDescriptor,
-    entityType: string
-  ): EmbedField[] => {
+  private getArgumentEntityFields = (parent: AnyParentDescriptor, argument: CallableDescriptor): EmbedField[] => {
     const { params } = argument;
 
     if (!params.length) return [];
 
     return params.map((argument, index) => ({
-      name: index === 0 ? `${titleCase(entityType)} Arguments` : '\u200b',
+      name: index === 0 ? 'Arguments' : '\u200b',
       value: [
         `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
           argument.default ? `= ${argument.default}` : ''
         }`.trim(),
-        this.parseDocString(argument.description, parent)
+        'description' in argument ? this.parseDocString(argument.description, parent) : ''
       ].join('\n')
     }));
   };
@@ -291,18 +287,16 @@ export default class DocumentationCommand extends SlashCommand {
       }
     ].filter((field) => field && field.value !== 'None');
 
-  private parseDocString = (docString: string, parentStruct: AnyParentDescriptor): string =>
-    docString
-      .replace(/(?:^|{)@link ([^}]+)(?:}|$)/g, (_, link) => link)
-      .replace(/(?:^|{)@see ([^}]+)(?:}|$)/g, (_, ref) => {
-        let prefix = '';
+  private parseDocString = (docString: string, parentStruct: AnyStructureDescriptor): string =>
+    docString.replace(/(?:^|{)@(?:see|link) ([^}]+)(?:}|$)/g, (_, ref) => {
+      let prefix = '';
 
-        if (['#', '~'].some((char) => ref.startsWith(char))) {
-          prefix = parentStruct.name;
-        }
+      if (['#', '~'].some((char) => ref.startsWith(char))) {
+        prefix = parentStruct.name;
+      }
 
-        return this.resolveType([prefix + ref]);
-      });
+      return this.resolveType([prefix + ref]);
+    });
 
   private resolveType = (type: string[][][] | string[][] | string[]): string =>
     type
