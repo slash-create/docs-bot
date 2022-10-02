@@ -3,7 +3,7 @@ import { Collection } from 'slash-create';
 import { ONE_HOUR } from './common';
 
 import { BRANCH, rawContentLink } from './linkBuilder';
-import logger from './logger';
+import { logger } from './logger';
 
 export interface CacheInfo {
   body: string;

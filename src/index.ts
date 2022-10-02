@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { SlashCreator, FastifyServer } from 'slash-create';
 import path from 'path';
-import logger from './util/logger';
+import { logger } from './util/logger';
 import { hashMapToString } from './util/common';
 
 let dotenvPath = path.join(process.cwd(), '.env');
@@ -17,7 +17,7 @@ const creator = new SlashCreator({
   serverHost: '0.0.0.0'
 });
 
-creator.on('debug', (message) => logger.log(message));
+creator.on('debug', (message) => logger.debug(message));
 creator.on('warn', (message) => logger.warn(message));
 creator.on('error', (error) => logger.error(error));
 creator.on('synced', () => logger.info('Commands synced!'));
