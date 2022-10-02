@@ -211,6 +211,35 @@ export default class DocumentationCommand extends SlashCommand {
     };
   }
 
+  private addCommonFields(
+    embed: MessageEmbedOptions,
+    targetDescriptor: AnyStructureDescriptor,
+    parentDescriptor: AnyParentDescriptor = targetDescriptor as AnyParentDescriptor
+    // implied parent of current target is itself
+  ): MessageEmbedOptions {
+    // embed = { ...embed };
+
+    if ('description' in targetDescriptor)
+      embed.description = this.parseDocString(targetDescriptor.description, parentDescriptor);
+
+    if ('type' in targetDescriptor && !('params' in targetDescriptor))
+      embed.fields.push({
+        name: 'Type',
+        value: this.resolveType(targetDescriptor.type)
+      });
+
+    if ('params' in targetDescriptor)
+      embed.fields.push(...this.getArgumentEntityFields(parentDescriptor, targetDescriptor));
+
+    if ('returns' in targetDescriptor)
+      embed.fields.push({
+        name: 'Returns',
+        value: this.resolveType(targetDescriptor.returns)
+      });
+
+    return embed;
+  }
+
   private getLinkComponents = (target: [string, string?], meta: FileMeta, isTypedef: boolean): ComponentActionRow[] => [
     {
       type: ComponentType.ACTION_ROW,
