@@ -73,17 +73,14 @@ export default class DocumentationCommand extends SlashCommand {
     const focusedOption: string = ctx.options[command][ctx.focused];
 
     switch (ctx.focused) {
-      case 'class': {
-        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class');
+      case 'class':
+      case 'typedef': {
+        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, ctx.focused);
 
         if (command === 'event')
           matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
 
         return matchingKeys.map((value) => ({ name: value.string, value: value.string }));
-      }
-      case 'typedef': {
-        const results = TypeNavigator.fuzzyFilter(focusedOption, 'typedef');
-        return results.map((value) => ({ name: value.string, value: value.string }));
       }
       case 'event':
       case 'method':
