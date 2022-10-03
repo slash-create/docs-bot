@@ -191,7 +191,7 @@ export default class CodeCommand extends SlashCommand {
 
     return {
       content,
-      ephemeral: !options.share,
+      ephemeral: ctx.member?.permissions.has('SEND_MESSAGES') && !options.share,
       components: [
         {
           type: ComponentType.ACTION_ROW,

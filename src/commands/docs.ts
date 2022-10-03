@@ -215,7 +215,7 @@ export default class DocumentationCommand extends SlashCommand {
 
     return {
       embeds: [embed],
-      ephemeral: !options.share,
+      ephemeral: ctx.member?.permissions.has('SEND_MESSAGES') && !options.share,
       components: this.getLinkComponents(fragments, typeMeta, calledType === 'typedef')
     };
   }
