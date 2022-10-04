@@ -16,11 +16,12 @@ import {
 import { SC_RED, standardObjects, titleCase, docsOptionFactory, shareOption } from '../util/common';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
+  AnyParentDescriptor,
+  AnyStructureDescriptor,
   CallableDescriptor,
   ChildStructureDescriptor,
   ClassDescriptor,
   FileMeta,
-  TypeDescriptor,
   TypeSource,
   TypeSymbol
 } from '../util/metaTypes';
@@ -72,17 +73,14 @@ export default class DocumentationCommand extends SlashCommand {
     const focusedOption: string = ctx.options[command][ctx.focused];
 
     switch (ctx.focused) {
-      case 'class': {
-        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, 'class');
+      case 'class':
+      case 'typedef': {
+        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, ctx.focused);
 
         if (command === 'event')
           matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
 
         return matchingKeys.map((value) => ({ name: value.string, value: value.string }));
-      }
-      case 'typedef': {
-        const results = TypeNavigator.fuzzyFilter(focusedOption, 'typedef');
-        return results.map((value) => ({ name: value.string, value: value.string }));
       }
       case 'event':
       case 'method':
@@ -137,13 +135,15 @@ export default class DocumentationCommand extends SlashCommand {
       color: SC_RED,
       fields: [],
       timestamp: new Date(ctx.invokedAt),
-      ...(options.share && {
-        footer: {
-          text: `Requested by ${ctx.user.username}#${ctx.user.discriminator}`,
-          icon_url: ctx.user.avatarURL
-        }
-      })
+      footer: {
+        text: titleCase(calledType)
+      }
     };
+
+    if (options.share) {
+      embed.footer.text += ` | Requested by ${ctx.user.username}#${ctx.user.discriminator}`;
+      embed.footer.icon_url = ctx.member ? ctx.member.avatarURL : ctx.user.avatarURL;
+    }
 
     const fragments: [string, string?] = [null, null];
     let typeMeta: FileMeta = null;
@@ -151,61 +151,52 @@ export default class DocumentationCommand extends SlashCommand {
     switch (calledType) {
       case 'class':
       case 'typedef': {
-        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as ClassDescriptor | TypeDescriptor;
+        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as AnyParentDescriptor;
         try {
           typeMeta = descriptor.meta;
         } catch {
-          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
-          return;
+          return {
+            content: 'Entity was `null`, please check arguments.',
+            ephemeral: true
+          };
         }
 
-        Object.assign(embed, {
-          title: `${descriptor.name}${'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''}`,
-          description: descriptor.description,
-          fields: this.getClassEntityFields(descriptor, 'construct' in descriptor)
-        });
+        embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
+        embed.title = `${descriptor.name}${
+          'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''
+        }`;
+
+        this.addCommonFields(embed, descriptor);
 
         fragments[0] = descriptor.name;
         break;
       }
       default: {
         if (options[calledType] === 'null') {
-          // yes... litereal null
-          ctx.send('Invalid query, please check arguments.', { ephemeral: true });
-          return;
+          // yes... literal null
+          return {
+            content: 'Entity was `null`, please check arguments.',
+            ephemeral: true
+          };
         }
 
+        const parentEntry = TypeNavigator.findFirstMatch(options.class) as ClassDescriptor;
         const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
         try {
           typeMeta = typeEntry.meta;
         } catch {
-          ctx.send('Entity was `null`, please check arguments.', { ephemeral: true });
-          return;
+          // second catch, in case the parent entry is null
+          return {
+            content: 'Entity not found, please check arguments.',
+            ephemeral: true
+          };
         }
 
         const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
 
-        Object.assign(embed, {
-          title: combinedKey,
-          description: typeEntry.description
-        });
+        embed.title = combinedKey;
 
-        if ('type' in typeEntry)
-          embed.fields.push({
-            name: 'Type',
-            value: this.resolveType(typeEntry.type)
-          });
-
-        if ('params' in typeEntry)
-          // calledType !== 'prop'
-          embed.fields.push(...this.getArgumentEntityFields(typeEntry, calledType));
-
-        if ('returns' in typeEntry)
-          // calledType === 'method'
-          embed.fields.push({
-            name: 'Returns',
-            value: this.resolveType(typeEntry.returns)
-          });
+        this.addCommonFields(embed, typeEntry, parentEntry);
 
         // exact check, if typeEntry were a class i'd do instance of... maybe
         fragments[0] = options.class;
@@ -218,6 +209,35 @@ export default class DocumentationCommand extends SlashCommand {
       ephemeral: !options.share,
       components: this.getLinkComponents(fragments, typeMeta, calledType === 'typedef')
     };
+  }
+
+  private addCommonFields(
+    embed: MessageEmbedOptions,
+    targetDescriptor: AnyStructureDescriptor,
+    parentDescriptor: AnyParentDescriptor = targetDescriptor as AnyParentDescriptor
+    // implied parent of current target is itself
+  ): MessageEmbedOptions {
+    // embed = { ...embed };
+
+    if ('description' in targetDescriptor)
+      embed.description = this.parseDocString(targetDescriptor.description, parentDescriptor);
+
+    if ('type' in targetDescriptor && !('params' in targetDescriptor))
+      embed.fields.push({
+        name: 'Type',
+        value: this.resolveType(targetDescriptor.type)
+      });
+
+    if ('params' in targetDescriptor)
+      embed.fields.push(...this.getArgumentEntityFields(parentDescriptor, targetDescriptor));
+
+    if ('returns' in targetDescriptor)
+      embed.fields.push({
+        name: 'Returns',
+        value: this.resolveType(targetDescriptor.returns)
+      });
+
+    return embed;
   }
 
   private getLinkComponents = (target: [string, string?], meta: FileMeta, isTypedef: boolean): ComponentActionRow[] => [
@@ -246,49 +266,49 @@ export default class DocumentationCommand extends SlashCommand {
     }
   ];
 
-  private getArgumentEntityFields = (argumentParent: CallableDescriptor, entityType: string): EmbedField[] => {
-    const { params } = argumentParent;
+  private getArgumentEntityFields = (parent: AnyParentDescriptor, argument: CallableDescriptor): EmbedField[] => {
+    const { params } = argument;
 
     if (!params.length) return [];
 
     return params.map((argument, index) => ({
-      name: index === 0 ? `${titleCase(entityType)} Arguments` : '\u200b',
+      name: index === 0 ? 'Arguments' : '\u200b',
       value: [
         `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
           argument.default ? `= ${argument.default}` : ''
         }`.trim(),
-        `${argument.description}`
+        'description' in argument ? this.parseDocString(argument.description, parent) : ''
       ].join('\n')
     }));
   };
 
-  private getClassEntityFields = (classEntry: ClassDescriptor | TypeDescriptor, isClass: boolean): EmbedField[] =>
+  private getClassEntityFields = (parent: AnyParentDescriptor, isClass: boolean): EmbedField[] =>
     [
       // ...('construct' in classEntry && this.getArgumentEntityFields(classEntry.construct, 'constructor')),
-      'props' in classEntry && {
-        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${classEntry.props.length})`,
+      'props' in parent && {
+        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${parent.props.length})`,
         value:
-          classEntry.props
+          parent.props
             .filter((propEntry) => !propEntry.name.startsWith('_'))
             .map(({ name }) => `\`${name}\``)
             .join('\n') || 'None',
         inline: true
       },
-      'methods' in classEntry && {
-        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${classEntry.methods.length})`,
+      'methods' in parent && {
+        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${parent.methods.length})`,
         value:
-          classEntry.methods
+          parent.methods
             .filter((methodEntry) => methodEntry.access !== 'private' || !methodEntry.name.startsWith('_'))
             // .map((methodEntry) => `[${methodEntry.name}](${buildDocsLink('class', className, methodEntry.name)})`)
             .map(({ name }) => `\`${name}\``)
             .join(`\n`) || 'None',
         inline: true
       },
-      'events' in classEntry && {
-        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${classEntry.events.length})`,
+      'events' in parent && {
+        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${parent.events.length})`,
         value:
-          classEntry.events
-            // implied of the existance as a a class
+          parent.events
+            // implied of the existence as a a class
             // .map((eventEntry) => `[${eventEntry.name}](${buildDocsLink('class', typeEntry.name, eventEntry.name)})`)
             .map(({ name }) => `\`${name}\``)
             .join('\n') || 'None',
@@ -296,7 +316,18 @@ export default class DocumentationCommand extends SlashCommand {
       }
     ].filter((field) => field && field.value !== 'None');
 
-  private resolveType = (type: string[][][]): string =>
+  private parseDocString = (docString: string, parentStruct: AnyStructureDescriptor): string =>
+    docString.replace(/(?:^|{)@(?:see|link) ([^}]+)(?:}|$)/g, (_, ref) => {
+      let prefix = '';
+
+      if (['#', '~'].some((char) => ref.startsWith(char))) {
+        prefix = parentStruct.name;
+      }
+
+      return this.resolveType([prefix + ref]);
+    });
+
+  private resolveType = (type: string[][][] | string[][] | string[]): string =>
     type
       .flat(2)
       .map((fragment) => {

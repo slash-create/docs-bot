@@ -77,11 +77,14 @@ export interface ParameterDescriptor {
 
 export interface TypeDescriptor {
   access?: 'private';
-  description: string;
+  description?: string;
   meta: FileMeta;
   name: string;
   see: [];
-  props: MemberDescriptor[];
+  props?: MemberDescriptor[];
+  params?: ParameterDescriptor[];
+  returns?: string[][][];
+  type?: string[][][];
 }
 
 export enum TypeSymbol {
@@ -108,6 +111,11 @@ export interface TypeOutcome {
   event: EventDescriptor;
 }
 
+export type AnyParentDescriptor = ClassDescriptor | TypeDescriptor;
+export type AnyStructureDescriptor = ChildStructureDescriptor | AnyParentDescriptor;
+/**
+ * TypeDescriptor can be a callable entity in rare cases (type Callback = (a: string) => void;), but it's not a class.
+ * <Descriptor>.params is used if <Descriptor>.type is not present (for TypeDescriptor only).
+ */
+export type CallableDescriptor = MethodDescriptor | EventDescriptor | ClassConstructor | TypeDescriptor;
 export type ChildStructureDescriptor = MethodDescriptor | MemberDescriptor | EventDescriptor;
-export type AnyStructureDescriptor = ChildStructureDescriptor | ClassDescriptor | TypeDescriptor;
-export type CallableDescriptor = MethodDescriptor | EventDescriptor | ClassConstructor;
