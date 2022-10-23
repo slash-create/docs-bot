@@ -144,6 +144,8 @@ export default class CodeCommand extends SlashCommand {
       };
     }
 
+    const amendNotes = new Set<string>();
+
     let actualStart = startLine;
     let actualEnd = endLine;
 
@@ -159,29 +161,55 @@ export default class CodeCommand extends SlashCommand {
 
     const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
+    let commentOpen = false;
+    for (const [index, line] of lineSelection.entries()) {
+      if (!commentOpen) {
+        lineSelection[index] = line.replace(/^( {2,}) \*/gm, '$1/*');
+        // to ensure comments are always opened if line numbers are enabled
+        if (!shouldHaveLineNumbers) commentOpen = true;
+        amendNotes.add('A comment block was altered for formatting purposes.');
+      }
+
+      if (line.indexOf('/*') >= 0) commentOpen = true;
+      if (line.indexOf('*/') >= 0) commentOpen = false;
+    }
+
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
+      [...amendNotes].map((note) => `> ${note}`),
       '```js',
-      lineSelection
-        .map((line, index) => this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers))
-        .join('\n'),
+      lineSelection.map((line, index) =>
+        this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers)
+      ),
       '```'
-    ].join('\n');
+    ]
+      .flat()
+      .join('\n');
 
     // #region content trim loop
     let trimTopThisTime = false;
+    let notesCount = amendNotes.size;
     while (content.length > 2000) {
+      amendNotes.add('Requested content was trimmed.');
       const lines = content.split('\n');
 
       // #region trim location
       if (subCommand === 'entity' && trimTopThisTime) {
-        lines.splice(2, 1);
+        lines.splice(notesCount + 2, 1);
         actualStart++;
       } else {
         lines.splice(-2, 1);
         actualEnd--;
       }
       trimTopThisTime = !trimTopThisTime;
+      // #endregion
+
+      // #region notes re-injection
+      if (amendNotes.size !== notesCount) {
+        const notesLines = [...amendNotes].map((note) => `> ${note}`);
+        notesCount = amendNotes.size;
+        lines.splice(2, notesCount, ...notesLines);
+      }
       // #endregion
 
       lines[0] = this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]);
