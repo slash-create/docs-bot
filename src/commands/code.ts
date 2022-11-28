@@ -161,7 +161,7 @@ export default class CodeCommand extends SlashCommand {
 
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
-      '```js',
+      '```ts',
       lineSelection
         .map((line, index) => this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers))
         .join('\n'),
