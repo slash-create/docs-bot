@@ -102,7 +102,7 @@ export default class CodeCommand extends SlashCommand {
 
         const { meta } = TypeNavigator.findFirstMatch(query);
 
-        const buffer = Math.trunc(around / 2) + (around % 2);
+        const buffer = Math.round(around / 2);
 
         startLine = meta.line - buffer;
         endLine = meta.line + buffer;
@@ -177,7 +177,7 @@ export default class CodeCommand extends SlashCommand {
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
       [...amendNotes].map((note) => `> ${note}`),
-      '```js',
+      '```ts',
       lineSelection.map((line, index) =>
         this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers)
       ),
