@@ -207,8 +207,8 @@ export default class CodeCommand extends SlashCommand {
       // #region notes re-injection
       if (amendNotes.size !== notesCount) {
         const notesLines = [...amendNotes].map((note) => `> ${note}`);
-        notesCount = amendNotes.size;
         lines.splice(1, notesCount, ...notesLines);
+        notesCount = amendNotes.size;
       }
       // #endregion
 
