@@ -118,7 +118,7 @@ export default class ChatDebugCommand extends SlashCommand {
     const isURL = target.startsWith('https://');
     const mention = type in MentionPrefixes ? `<${MentionPrefixes[type]}${target}>` : `\`${target}\``;
     const header = `The **${type}** payload for ${isURL ? target : mention}`;
-    const stringPayload = JSON.stringify(payload, null, 2);
+    const stringPayload = JSON.stringify(payload, null, 2).replaceAll('`', '`\u200b');
 
     if (stringPayload.length > 1900) {
       return {
