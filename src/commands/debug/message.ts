@@ -14,6 +14,9 @@ export default class MessageDebugCommand extends SlashCommand {
 
     const rawPayload = resolved.messages[target_id];
 
-    return ChatDebugCommand.resolveFinalPayload(rawPayload, 'message', target_id);
+    const origin = 'guild_id' in ctx.data ? ctx.data.guild_id : '@me';
+    const target_url = `https://discord.com/channels/${origin}/${ctx.data.channel_id}/${target_id}`;
+
+    return ChatDebugCommand.resolveFinalPayload(rawPayload, 'message', target_url);
   }
 }

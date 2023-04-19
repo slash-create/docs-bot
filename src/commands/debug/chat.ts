@@ -115,8 +115,9 @@ export default class ChatDebugCommand extends SlashCommand {
 
   // rework `header` to use `type` instead and construct the header in this method
   static resolveFinalPayload(payload: Record<string, any>, type: string, target: string): MessageOptions {
+    const isURL = target.startsWith('https://');
     const mention = type in MentionPrefixes ? `<${MentionPrefixes[type]}${target}>` : `\`${target}\``;
-    const header = `The **${type}** payload for ${mention}.`;
+    const header = `The **${type}** payload for ${isURL ? target : mention}`;
     const stringPayload = JSON.stringify(payload, null, 2);
 
     if (stringPayload.length > 1900) {
