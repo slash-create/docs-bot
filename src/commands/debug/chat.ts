@@ -15,6 +15,8 @@ enum MentionPrefixes {
   role = '@&'
 }
 
+type ResolvedDebugUser = CommandUser | (ResolvedMemberData & { user: CommandUser });
+
 export default class ChatDebugCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
@@ -65,15 +67,18 @@ export default class ChatDebugCommand extends SlashCommand {
     });
   }
 
-  static getUserTargetFrom(context: CommandContext): ResolvedMemberData | CommandUser {
+  static getUserTargetFrom(context: CommandContext): ResolvedDebugUser {
     const [subCommand] = context.subcommands;
     const { target } = subCommand ? context.options[subCommand] : { target: context.targetID };
-    const field = 'guild_id' in context.data ? 'member' : 'user';
-
-    if (!target) return context.data[field];
 
     const { data } = context.data;
-    return data.resolved[`${field}s`][target];
+
+    if (!context.guildID) return data.resolved.users[target];
+
+    return {
+      user: data.resolved.users[target],
+      ...data.resolved.members[target]
+    };
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions> {
