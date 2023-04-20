@@ -4,7 +4,9 @@ import {
   CommandOptionType,
   CommandUser,
   MessageOptions,
+  ResolvedChannel,
   ResolvedMemberData,
+  ResolvedRole,
   SlashCommand,
   SlashCreator
 } from 'slash-create';
@@ -71,21 +73,25 @@ export default class ChatDebugCommand extends SlashCommand {
     const [subCommand] = context.subcommands;
     const { target } = subCommand ? context.options[subCommand] : { target: context.targetID };
 
-    const { data } = context.data;
+    const inGuild = 'guild_id' in context.data;
 
-    if (!context.guildID) return data.resolved.users[target];
+    if (!target) return context.data[inGuild ? 'member' : 'user'];
 
-    return {
-      user: data.resolved.users[target],
-      ...data.resolved.members[target]
-    };
+    const { resolved } = context.data.data;
+
+    return !inGuild
+      ? resolved.users[target]
+      : {
+          ...resolved.members[target],
+          user: resolved.users[target]
+        };
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions> {
     const [subCommand] = ctx.subcommands;
     const { target } = ctx.options[subCommand];
 
-    let rawPayload: Record<string, any>;
+    let rawPayload: ResolvedDebugUser | ResolvedChannel | ResolvedRole;
     let error: string;
 
     switch (subCommand) {
@@ -115,7 +121,9 @@ export default class ChatDebugCommand extends SlashCommand {
       };
     }
 
-    return ChatDebugCommand.resolveFinalPayload(rawPayload, subCommand, target);
+    const targetID = 'user' in rawPayload ? rawPayload.user.id : rawPayload.id;
+
+    return ChatDebugCommand.resolveFinalPayload(rawPayload, subCommand, targetID);
   }
 
   // rework `header` to use `type` instead and construct the header in this method
@@ -140,6 +148,11 @@ export default class ChatDebugCommand extends SlashCommand {
 
     return {
       content: [header, codeBlock].join('\n'),
+      allowedMentions: {
+        everyone: false,
+        users: false,
+        roles: false
+      },
       ephemeral: true
     };
   }
