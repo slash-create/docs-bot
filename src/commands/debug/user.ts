@@ -5,7 +5,8 @@ export default class UserDebugCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'Debug User',
-      type: ApplicationCommandType.USER
+      type: ApplicationCommandType.USER,
+      deferEphemeral: true
     });
   }
 

@@ -5,7 +5,8 @@ export default class MessageDebugCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'Debug Message',
-      type: ApplicationCommandType.MESSAGE
+      type: ApplicationCommandType.MESSAGE,
+      deferEphemeral: true
     });
   }
 
