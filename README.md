@@ -47,8 +47,20 @@ $ npx slash-up list
         share? boolean - Share the outcome of your query to the channel.
         line_numbers? boolean - Include line numbers in code response. (default=false)
 
-/search - Search for a documentation entry. (1003238111637155905)
+/search - Search for a documentation entry.
     query* string - The query to search all entries.
+
+/debug - Debug provided entities for interaction contexts.
+    user - Print the payload for yourself or the target user.
+        target? user - The user to target for debug. (default = @me)
+    channel - Print the payload for the target channel.
+        target channel - The channel to target for debug.
+    role - Print the payload for the target role.
+        target role - The role to target for debug.
+
+Debug Message (MESSAGE)
+
+Debug User (USER) -> /debug user target: {SELECTED}
 ```
 
 ### Showcase
@@ -61,8 +73,19 @@ $ npx slash-up list
 
   ![Docs_Method Command](assets/commands/docs-method.png)
 
+- `/code entity ...`
+
+  ![Code_Entity Command](assets/commands/code-entity.png)
+
+- `/debug channel target:{TYPE}`
+  | **(Announcement) Thread (10)** | **(Channel) Thread (11)** | **(Forum) Thread (11)** |
+  | ------------------------------ | ------------------------- | ----------------------- |
+  | ![announcement_thread](./assets/commands/debug/channel/announce-thread.png) | ![channel_thread](./assets/commands/debug/channel/channel-thread.png) | ![forum_thread](./assets/commands/debug/channel/forum-thread.png) |
+
+Full set of example responses are available from [the assets folder](./assets/commands/).
 
 ## Installation
+
 ```sh
 git clone https://github.com/slash-create/docs-bot.git
 cd docs-bot
