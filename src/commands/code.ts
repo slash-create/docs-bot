@@ -172,10 +172,8 @@ export default class CodeCommand extends SlashCommand {
     const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
     for (const [index, line] of lineSelection.entries()) {
-      if (!commentOpen) {
+      if (commentOpen) {
         lineSelection[index] = line.replace(/^( {2,}) \*/gm, '$1/*');
-        // to ensure comments are always opened if line numbers are enabled
-        if (!shouldHaveLineNumbers) commentOpen = true;
         amendNotes.add('A comment block was altered for formatting purposes.');
       }
 
