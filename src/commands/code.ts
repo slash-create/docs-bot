@@ -159,9 +159,18 @@ export default class CodeCommand extends SlashCommand {
     if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
     if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
 
+    let commentOpen = false;
+
+    for (let head = actualStart; head >= 0; head--) {
+      // Comment was opened before the initial head of the selection
+      if (lines[head].indexOf("/*")) commentOpen = true;
+      if (lines[head].indexOf("*/")) commentOpen = false;
+
+      if (commentOpen) break;
+    }
+
     const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
-    let commentOpen = false;
     for (const [index, line] of lineSelection.entries()) {
       if (!commentOpen) {
         lineSelection[index] = line.replace(/^( {2,}) \*/gm, '$1/*');
