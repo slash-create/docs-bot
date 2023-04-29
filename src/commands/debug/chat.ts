@@ -1,10 +1,11 @@
 import {
   ApplicationCommandType,
+  CommandChannel,
   CommandContext,
+  CommandMember,
   CommandOptionType,
   CommandUser,
   MessageOptions,
-  ResolvedChannel,
   ResolvedMemberData,
   ResolvedRole,
   SlashCommand,
@@ -17,7 +18,7 @@ enum MentionPrefixes {
   role = '@&'
 }
 
-type ResolvedDebugUser = CommandUser | (ResolvedMemberData & { user: CommandUser });
+type ResolvedDebugUser = CommandUser | CommandMember | (ResolvedMemberData & { user: CommandUser });
 
 export default class ChatDebugCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -34,7 +35,7 @@ export default class ChatDebugCommand extends SlashCommand {
             {
               name: 'target',
               type: CommandOptionType.USER,
-              description: 'The user to target for debug (defaults to self).'
+              description: 'The user to target for debug. (default = @me)'
             }
           ]
         },
@@ -46,8 +47,7 @@ export default class ChatDebugCommand extends SlashCommand {
             {
               name: 'target',
               type: CommandOptionType.CHANNEL,
-              description: 'The channel to target for debug.',
-              required: true
+              description: 'The channel to target for debug. (default = #here)'
             }
           ]
         },
@@ -91,7 +91,7 @@ export default class ChatDebugCommand extends SlashCommand {
     const [subCommand] = ctx.subcommands;
     const { target } = ctx.options[subCommand];
 
-    let rawPayload: ResolvedDebugUser | ResolvedChannel | ResolvedRole;
+    let rawPayload: ResolvedDebugUser | CommandChannel | ResolvedRole;
     let error: string;
 
     switch (subCommand) {
@@ -102,14 +102,17 @@ export default class ChatDebugCommand extends SlashCommand {
 
       case 'channel':
       case 'role': {
-        if (!ctx.guildID) {
+        if (!ctx.guildID && subCommand === 'role') {
           error = 'This is not a guild context, you should not be here.';
           break;
         }
 
         const field = `${subCommand}s` as const;
 
-        rawPayload = ctx.data.data.resolved[field][target];
+        rawPayload = subCommand === 'channel' && !target
+          ? ctx.data.channel
+          : ctx.data.data.resolved[field][target];
+
         break;
       }
     }
@@ -138,7 +141,7 @@ export default class ChatDebugCommand extends SlashCommand {
         content: header,
         ephemeral: true,
         file: {
-          name: `payload_${target}.json`,
+          name: `payload_${type}_${target.split('/').slice(-1)}.json`,
           file: Buffer.from(stringPayload)
         }
       };
