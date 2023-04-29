@@ -54,7 +54,7 @@ $ npx slash-up list
     user - Print the payload for yourself or the target user.
         target? user - The user to target for debug. (default = @me)
     channel - Print the payload for the target channel.
-        target channel - The channel to target for debug.
+        target? channel - The channel to target for debug.
     role - Print the payload for the target role.
         target role - The role to target for debug.
 
@@ -77,7 +77,7 @@ Debug User (USER) -> /debug user target: {SELECTED}
 
   ![Code_Entity Command](assets/commands/code-entity.png)
 
-- `/debug channel target:{TYPE}`
+- `/debug channel target?: {TYPE}`
   | **(Announcement) Thread (10)** | **(Channel) Thread (11)** | **(Forum) Thread (11)** |
   | ------------------------------ | ------------------------- | ----------------------- |
   | ![announcement_thread](./assets/commands/debug/channel/announce-thread.png) | ![channel_thread](./assets/commands/debug/channel/channel-thread.png) | ![forum_thread](./assets/commands/debug/channel/forum-thread.png) |
