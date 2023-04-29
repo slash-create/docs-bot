@@ -161,25 +161,34 @@ export default class CodeCommand extends SlashCommand {
 
     let commentOpen = false;
 
-    for (let head = actualStart; head >= 0; head--) {
+    for (let head = actualStart - 2; head >= 0; head--) {
       // Comment was opened before the initial head of the selection
-      if (lines[head].indexOf("/*")) commentOpen = true;
-      if (lines[head].indexOf("*/")) commentOpen = false;
-
-      if (commentOpen) break;
+      if (lines[head].indexOf('*/')) {
+        commentOpen = true;
+        break;
+      }
     }
 
     const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
     for (const [index, line] of lineSelection.entries()) {
-      if (commentOpen) {
-        lineSelection[index] = line.replace(/^( {2,}) \*/gm, '$1/*');
-        amendNotes.add('A comment block was altered for formatting purposes.');
-      }
-
       if (line.indexOf('/*') >= 0) commentOpen = true;
-      if (line.indexOf('*/') >= 0) commentOpen = false;
+      // if (line.indexOf('*/') >= 0) commentOpen = false;
+
+      if (!(commentOpen || shouldHaveLineNumbers)) continue;
+      commentOpen = false;
+
+      const processedLine = line.replace(/^( {2,}) \*/gm, '$1/*');
+
+      if (processedLine === lineSelection[index]) continue;
+
+      lineSelection[index] = processedLine;
+      amendNotes.add('A comment block was altered for formatting purposes.');
     }
+
+    // if (commentOpen) {
+    //   amendNotes.add('A comment block remains open.');
+    // }
 
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
