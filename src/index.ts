@@ -1,13 +1,14 @@
 import dotenv from 'dotenv';
 import { SlashCreator, FastifyServer } from 'slash-create';
 import path from 'path';
-import { logger } from './util/logger';
 import { hashMapToString } from './util/common';
 
 let dotenvPath = path.join(process.cwd(), '.env');
 if (path.parse(process.cwd()).name === 'dist') dotenvPath = path.join(process.cwd(), '..', '.env');
 
 dotenv.config({ path: dotenvPath });
+
+import { logger } from './util/logger';
 
 const creator = new SlashCreator({
   applicationID: process.env.DISCORD_APP_ID,
