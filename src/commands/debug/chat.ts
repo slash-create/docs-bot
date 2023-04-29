@@ -141,7 +141,7 @@ export default class ChatDebugCommand extends SlashCommand {
         content: header,
         ephemeral: true,
         file: {
-          name: `payload_${target}.json`,
+          name: `payload_${type}_${target.split('/').slice(-1)}.json`,
           file: Buffer.from(stringPayload)
         }
       };
