@@ -159,20 +159,36 @@ export default class CodeCommand extends SlashCommand {
     if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
     if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
 
+    let commentOpen = false;
+
+    for (let head = actualStart - 2; head >= 0; head--) {
+      // Comment was opened before the initial head of the selection
+      if (lines[head].indexOf('*/')) {
+        commentOpen = true;
+        break;
+      }
+    }
+
     const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
-    let commentOpen = false;
     for (const [index, line] of lineSelection.entries()) {
-      if (!commentOpen) {
-        lineSelection[index] = line.replace(/^( {2,}) \*/gm, '$1/*');
-        // to ensure comments are always opened if line numbers are enabled
-        if (!shouldHaveLineNumbers) commentOpen = true;
-        amendNotes.add('A comment block was altered for formatting purposes.');
-      }
-
       if (line.indexOf('/*') >= 0) commentOpen = true;
-      if (line.indexOf('*/') >= 0) commentOpen = false;
+      // if (line.indexOf('*/') >= 0) commentOpen = false;
+
+      if (!(commentOpen || shouldHaveLineNumbers)) continue;
+      commentOpen = false;
+
+      const processedLine = line.replace(/^( {2,}) \*/gm, '$1/*');
+
+      if (processedLine === lineSelection[index]) continue;
+
+      lineSelection[index] = processedLine;
+      amendNotes.add('A comment block was altered for formatting purposes.');
     }
+
+    // if (commentOpen) {
+    //   amendNotes.add('A comment block remains open.');
+    // }
 
     let content = [
       this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
