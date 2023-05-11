@@ -1,10 +1,12 @@
 import { SlashCreator } from "slash-create";
-import { deleteResponse } from "./delete-repsonse";
+import { component as deleteComponent, deleteResponse } from './delete-repsonse';
 
-export enum ComponentKeys {
-  DELETE_RESPONSE = "delete-response"
-}
+const components = {
+  [deleteComponent.custom_id]: deleteResponse
+};
 
 export default function registerComponents(creator: SlashCreator) {
-
+  for (const [key, callback] of Object.entries(components)) {
+    creator.registerGlobalComponent(key, (ctx) => callback(creator, ctx));
+  }
 }

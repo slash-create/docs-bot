@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
 import { SlashCreator, FastifyServer } from 'slash-create';
 import path from 'path';
+
 import { hashMapToString } from './util/common';
+import registerComponents from './components';
 
 let dotenvPath = path.join(process.cwd(), '.env');
 if (path.parse(process.cwd()).name === 'dist') dotenvPath = path.join(process.cwd(), '..', '.env');
@@ -29,6 +31,8 @@ creator.on('commandRun', (command, _, ctx) => {
 });
 creator.on('commandRegister', (command) => logger.info(`Registered command ${command.commandName}`));
 creator.on('commandError', (command, error) => logger.error(`Command ${command.commandName}:`, error));
+
+registerComponents(creator);
 
 creator
   .withServer(new FastifyServer())

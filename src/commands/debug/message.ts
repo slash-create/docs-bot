@@ -1,5 +1,16 @@
-import { ApplicationCommandType, CommandContext, MessageOptions, SlashCommand, SlashCreator } from 'slash-create';
+import {
+  ApplicationCommandType,
+  ButtonStyle,
+  CommandContext,
+  ComponentActionRow,
+  ComponentType,
+  MessageOptions,
+  SlashCommand,
+  SlashCreator
+} from 'slash-create';
+
 import ChatDebugCommand from './chat';
+import { component as deleteComponent } from '../../components/delete-repsonse';
 
 export default class MessageDebugCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -18,6 +29,45 @@ export default class MessageDebugCommand extends SlashCommand {
     const origin = 'guild_id' in ctx.data ? ctx.data.guild_id : '@me';
     const target_url = `https://discord.com/channels/${origin}/${ctx.data.channel_id}/${target_id}`;
 
+    this.tryDeferredAdjustment(ctx);
+
     return ChatDebugCommand.resolveFinalPayload(rawPayload, 'message', target_url);
+  }
+
+  private async tryDeferredAdjustment(ctx: CommandContext): Promise<void> {
+    if (ctx.targetMessage.author.id !== this.creator.options.applicationID) return;
+
+    const { components } = ctx.targetMessage;
+
+    const firstRow = components[0] as ComponentActionRow;
+    const [firstComponent] = firstRow.components;
+
+    if (
+      firstComponent.type === ComponentType.BUTTON &&
+      firstComponent.style !== ButtonStyle.LINK &&
+      firstComponent.custom_id === deleteComponent.custom_id
+    )
+      return;
+
+    const builtComponents = components.slice() as ComponentActionRow[];
+
+    (builtComponents[0] as ComponentActionRow).components.splice(0, 0, deleteComponent);
+
+    for (const row in builtComponents) {
+      if (row === '5') return; // Injection failure
+
+      if (builtComponents[row].components.length > 5) {
+        const overflow = builtComponents[row].components.length - 5;
+        const slicedComponents = builtComponents[row].components.splice(5, overflow);
+
+        if (+row + 1 === 5) break;
+        else if (builtComponents[+row + 1]) builtComponents[+row + 1].components.splice(0, 0, ...slicedComponents);
+        else builtComponents.push({ type: ComponentType.ACTION_ROW, components: slicedComponents });
+      }
+    }
+
+    await ctx.edit(ctx.targetID, {
+      components: builtComponents
+    });
   }
 }

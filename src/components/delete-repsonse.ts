@@ -1,9 +1,15 @@
-import { ButtonStyle, CommandContext, ComponentButton, ComponentContext, ComponentType, SlashCreator } from 'slash-create';
-import { ComponentKeys } from '.';
+import {
+  ButtonStyle,
+  CommandContext,
+  ComponentButton,
+  ComponentContext,
+  ComponentType,
+  SlashCreator
+} from 'slash-create';
 
 export const component: ComponentButton = {
   type: ComponentType.BUTTON,
-  custom_id: ComponentKeys.DELETE_RESPONSE,
+  custom_id: 'delete-response',
   style: ButtonStyle.DESTRUCTIVE,
   label: '', // not needed?
   emoji: {
