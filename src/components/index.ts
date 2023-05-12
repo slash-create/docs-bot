@@ -1,4 +1,4 @@
-import { SlashCreator } from "slash-create";
+import { SlashCreator } from 'slash-create';
 import { component as deleteComponent, deleteResponse } from './delete-repsonse';
 
 const components = {

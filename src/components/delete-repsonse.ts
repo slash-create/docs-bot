@@ -15,7 +15,7 @@ export const component: ComponentButton = {
   emoji: {
     name: '🗑'
   }
-}
+};
 
 export function hasPermission(context: CommandContext | ComponentContext): boolean {
   if (context.channel.type === 1) return true; // DM
