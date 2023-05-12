@@ -28,8 +28,9 @@ export function hasPermission(context: CommandContext | ComponentContext): boole
 }
 
 export async function deleteResponse(creator: SlashCreator, context: ComponentContext) {
+  await context.acknowledge();
+
   if (!hasPermission(context)) return false;
 
-  await context.acknowledge();
   await context.delete(context.message.id);
 }
