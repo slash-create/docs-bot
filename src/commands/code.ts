@@ -35,6 +35,12 @@ export default class CodeCommand extends SlashCommand {
               min_value: 1,
               type: CommandOptionType.INTEGER
             },
+            {
+              name: 'offset',
+              description: 'Offset the selection view.',
+              type: CommandOptionType.INTEGER,
+              required: false
+            },
             shareOption,
             lineNumbersOption
           ]
@@ -92,7 +98,7 @@ export default class CodeCommand extends SlashCommand {
 
     switch (subCommand) {
       case 'entity': {
-        const { query, around = 3 } = options;
+        const { query, around = 3, offset = 0 } = options;
 
         if (!(query in TypeNavigator.typeMap.all))
           return {
@@ -102,10 +108,8 @@ export default class CodeCommand extends SlashCommand {
 
         const { meta } = TypeNavigator.findFirstMatch(query);
 
-        const buffer = Math.round(around / 2);
-
-        startLine = meta.line - buffer;
-        endLine = meta.line + buffer;
+        startLine = meta.line - around + offset;
+        endLine = meta.line + around + offset;
         file = `${meta.path}/${meta.file}`;
 
         break;
