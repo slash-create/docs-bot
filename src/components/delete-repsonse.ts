@@ -21,7 +21,7 @@ export function hasPermission(context: CommandContext | ComponentContext): boole
   if (context.channel.type === 1) return true; // DM
   // GROUP_DM - context.channel.type === 3 && context.channel.owner_id === context.user.id
   if ('targetMessage' in context) {
-    if (context.targetMessage.author.id === context.user.id) return true; // AUTHOR
+    if (context.targetMessage.interaction.user.id === context.user.id) return true; // AUTHOR
   }
 
   return context.member?.permissions.any(['ADMINISTRATOR', 'MANAGE_MESSAGES']) ?? false; // GUILD
