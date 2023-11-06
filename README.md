@@ -38,6 +38,7 @@ $ npx slash-up list
     entity - Fetch a file from a type entity.
         query* string - The query to search all entries.
         around? integer - How many lines to retrieve around the entity. (default = 3)
+        offset? integer - Offset the selection view.
         share? boolean - Share the outcome of your query to the channel.
         line_numbers? boolean - Include line numbers in code response. (default=false)
     lines - Fetch specific lines from the source code.
