@@ -1,6 +1,7 @@
 import { filter as fuzzyFilter } from 'fuzzy';
 
 import {
+  AnyComponentButton,
   AutocompleteChoice,
   AutocompleteContext,
   ButtonStyle,
@@ -12,6 +13,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
+import { component as deleteComponent } from '../components/delete-repsonse';
 import { lineNumbersOption, queryOption, shareOption } from '../util/common';
 import fileCache from '../util/fileCache';
 import { buildGitHubLink } from '../util/linkBuilder';
@@ -237,23 +239,27 @@ export default class CodeCommand extends SlashCommand {
     }
     // #endregion
 
+    const components: AnyComponentButton[] = [
+      {
+        type: ComponentType.BUTTON,
+        style: ButtonStyle.LINK,
+        url: buildGitHubLink(file, [actualStart, actualEnd]),
+        label: 'Open GitHub',
+        emoji: {
+          name: '📂'
+        }
+      }
+    ];
+
+    if (options.share) components.unshift(deleteComponent);
+
     return {
       content,
       ephemeral: !options.share,
       components: [
         {
           type: ComponentType.ACTION_ROW,
-          components: [
-            {
-              type: ComponentType.BUTTON,
-              style: ButtonStyle.LINK,
-              url: buildGitHubLink(file, [actualStart, actualEnd]),
-              label: 'Open GitHub',
-              emoji: {
-                name: '📂'
-              }
-            }
-          ]
+          components
         }
       ]
     };

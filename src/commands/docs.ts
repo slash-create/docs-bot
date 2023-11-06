@@ -1,10 +1,10 @@
 import {
+  AnyComponentButton,
   AutocompleteChoice,
   AutocompleteContext,
   ButtonStyle,
   CommandContext,
   CommandOptionType,
-  ComponentActionRow,
   ComponentType,
   EmbedField,
   MessageEmbedOptions,
@@ -13,6 +13,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
+import { component as deleteComponent } from '../components/delete-repsonse';
 import { SC_RED, standardObjects, titleCase, docsOptionFactory, shareOption } from '../util/common';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
@@ -204,10 +205,18 @@ export default class DocumentationCommand extends SlashCommand {
       }
     }
 
+    const components = this.getLinkComponents(fragments, typeMeta, calledType === 'typedef');
+    if (options.share) components.unshift(deleteComponent);
+
     return {
       embeds: [embed],
       ephemeral: !options.share,
-      components: this.getLinkComponents(fragments, typeMeta, calledType === 'typedef')
+      components: [
+        {
+          type: ComponentType.ACTION_ROW,
+          components
+        }
+      ]
     };
   }
 
@@ -240,29 +249,24 @@ export default class DocumentationCommand extends SlashCommand {
     return embed;
   }
 
-  private getLinkComponents = (target: [string, string?], meta: FileMeta, isTypedef: boolean): ComponentActionRow[] => [
+  private getLinkComponents = (target: [string, string?], meta: FileMeta, isTypedef: boolean): AnyComponentButton[] => [
     {
-      type: ComponentType.ACTION_ROW,
-      components: [
-        {
-          type: ComponentType.BUTTON,
-          style: ButtonStyle.LINK,
-          url: buildDocsLink(isTypedef ? 'typedef' : 'class', ...target),
-          label: 'Open Docs',
-          emoji: {
-            name: '📕'
-          }
-        },
-        {
-          type: ComponentType.BUTTON,
-          style: ButtonStyle.LINK,
-          url: buildGitHubLink(`${meta.path}/${meta.file}`, [meta.line]),
-          label: 'Open GitHub',
-          emoji: {
-            name: '📂'
-          }
-        }
-      ]
+      type: ComponentType.BUTTON,
+      style: ButtonStyle.LINK,
+      url: buildDocsLink(isTypedef ? 'typedef' : 'class', ...target),
+      label: 'Open Docs',
+      emoji: {
+        name: '📕'
+      }
+    },
+    {
+      type: ComponentType.BUTTON,
+      style: ButtonStyle.LINK,
+      url: buildGitHubLink(`${meta.path}/${meta.file}`, [meta.line]),
+      label: 'Open GitHub',
+      emoji: {
+        name: '📂'
+      }
     }
   ];
 
@@ -274,9 +278,8 @@ export default class DocumentationCommand extends SlashCommand {
     return params.map((argument, index) => ({
       name: index === 0 ? 'Arguments' : '\u200b',
       value: [
-        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
-          argument.default ? `= ${argument.default}` : ''
-        }`.trim(),
+        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${argument.default ? `= ${argument.default}` : ''
+          }`.trim(),
         'description' in argument ? this.parseDocString(argument.description, parent) : ''
       ].join('\n')
     }));
