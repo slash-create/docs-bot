@@ -29,14 +29,13 @@ export default class MessageDebugCommand extends SlashCommand {
     const origin = 'guild_id' in ctx.data ? ctx.data.guild_id : '@me';
     const target_url = `https://discord.com/channels/${origin}/${ctx.data.channel_id}/${target_id}`;
 
-    this.tryDeferredAdjustment(ctx);
+    if (ctx.targetMessage.author.id !== this.creator.options.applicationID)
+      this.tryDeferredAdjustment(ctx);
 
     return ChatDebugCommand.resolveFinalPayload(rawPayload, 'message', target_url);
   }
 
   private async tryDeferredAdjustment(ctx: CommandContext): Promise<void> {
-    if (ctx.targetMessage.author.id !== this.creator.options.applicationID) return;
-
     const { components } = ctx.targetMessage;
 
     const firstRow = components[0] as ComponentActionRow;
