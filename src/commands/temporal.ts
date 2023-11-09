@@ -21,8 +21,8 @@ export default class TemporalCommand extends SlashCommand {
           type: CommandOptionType.SUB_COMMAND
         },
         {
-          name: 'occurances',
-          description: 'Get all occurances of a day of the week for a day/month set between two specified years.',
+          name: 'occurrences',
+          description: 'Get all occurrences of a day of the week for a day/month set between two specified years.',
           type: CommandOptionType.SUB_COMMAND,
           options: [
             {
@@ -180,8 +180,8 @@ export default class TemporalCommand extends SlashCommand {
       case 'now':
         return this.#runTemporalNow(ctx);
 
-      case 'occurances':
-        return this.#runTemporalOccurances(ctx, options);
+      case 'occurrences':
+        return this.#runTemporalOccurrences(ctx, options);
 
       case 'parse':
         return this.#runTemporalParse(ctx, options);
@@ -190,7 +190,7 @@ export default class TemporalCommand extends SlashCommand {
         return this.#runTemporalExact(ctx, options);
     }
   }
-  
+
   async #runTemporalNow(ctx: CommandContext): Promise<MessageOptions> {
     const { invokedAt } = ctx;
 
@@ -212,7 +212,7 @@ export default class TemporalCommand extends SlashCommand {
    * - select?:{=first,last,random}
    * - count?:{=5,20}
    */
-  async #runTemporalOccurances(ctx: CommandContext, options: TemporalOccuranceOptions): Promise<MessageOptions> {
+  async #runTemporalOccurrences(ctx: CommandContext, options: TemporalOccuranceOptions): Promise<MessageOptions> {
     const {
       date,
       month,
