@@ -40,16 +40,16 @@ export default class SearchCommand extends SlashCommand {
     const [first, second = ''] = query.split(/[#$~]/);
     const subtype = TypeNavigator.typeMap.all[query];
 
-    const cmdString = ['/docs', subtype, `${subtype}: ${second || first}`];
+    const commandString = ['/docs', subtype, `${subtype}: ${second || first}`];
 
-    if (second) cmdString.splice(2, 0, `class: ${first}`);
+    if (second) commandString.splice(2, 0, `class: ${first}`);
 
     return {
       ephemeral: true,
       content: [
         `You selected \`${query}\`, this is not a entry retrieval command.`,
         '*Entries found in this command may include internal structures not included on the primary command.*',
-        `> Please use \`${cmdString.join(' ')}\` - ${command(['docs', subtype], this.docsCommand.ids.get('global'))}.`
+        `> Please use \`${commandString.join(' ')}\` - ${command(['docs', subtype], this.docsCommand.ids.get('global'))}.`
       ].join('\n')
     };
   }
