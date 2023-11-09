@@ -29,15 +29,7 @@ export default class TemporalCommand extends SlashCommand {
               name: 'weekday',
               type: CommandOptionType.INTEGER,
               description: 'The day of the week to focus on.',
-              choices: [
-                { name: 'Sunday', value: 0 },
-                { name: 'Monday', value: 1 },
-                { name: 'Tuesday', value: 2 },
-                { name: 'Wednesday', value: 3 },
-                { name: 'Thursday', value: 4 },
-                { name: 'Friday', value: 5 },
-                { name: 'Saturday', value: 6 }
-              ],
+              choices: days.map((month, index) => ({ name: month, value: index })),
               required: true
             },
             {
@@ -263,7 +255,7 @@ export default class TemporalCommand extends SlashCommand {
     if (select !== 'random') occurances.sort((a, b) => (select === 'first' ? a - b : b - a));
 
     const prefix = select === 'random' ? 'A selection from' : `The ${select}`;
-    const dateString = `${months[month]} ${this.#ordinal(date)}`;
+    const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(date)}`;
     const ordinalQuery = `**${occurances.length} ${plural(occurances.length, 'occurance')}** of ${dateString}`;
     const yearRange = `${startYear} and ${endYear}`;
 
@@ -348,6 +340,16 @@ interface TemporalExactOptions {
   minute: number;
   second: number;
 }
+
+const days = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday'
+]
 
 const months = [
   /* Q1 */ 'January', 'Febuary',  'March',
