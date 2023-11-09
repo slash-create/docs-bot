@@ -27,6 +27,7 @@ import {
   TypeSymbol
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
+import { command } from '../util/markup';
 
 export default class DocumentationCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -342,5 +343,5 @@ export default class DocumentationCommand extends SlashCommand {
       .replace(/(<|>)/g, (brace) => `\\${brace}`);
 
   private buildCommandMention = (commandName: string) =>
-    `</${this.commandName} ${commandName}:${this.ids.get('global')}>`;
+    command([this.commandName, commandName], this.ids.get('global'));
 }
