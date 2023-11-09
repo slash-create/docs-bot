@@ -17,6 +17,7 @@ export default class TemporalCommand extends SlashCommand {
     super(creator, {
       name: 'temporal',
       description: "Simplified use of Discord's time syntax.",
+      deferEphemeral: true,
       options: [
         {
           name: 'now',
