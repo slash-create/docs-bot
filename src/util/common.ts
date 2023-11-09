@@ -1,4 +1,4 @@
-import { ApplicationCommandOption, ApplicationCommandOptionAutocompletable, CommandOptionType } from 'slash-create';
+import { ApplicationCommandOption, ApplicationCommandOptionAutocompletable, ApplicationCommandOptionLimitedNumber, CommandOptionType } from 'slash-create';
 
 export const SC_RED = 15929905; // color for #F31231
 export const ONE_HOUR = 1000 * 60 * 60;
@@ -30,6 +30,18 @@ export const docsOptionFactory = (option: string): ApplicationCommandOptionAutoc
   type: CommandOptionType.STRING,
   required: true,
   autocomplete: true
+});
+
+export const timeOptionFactory = (
+  option: string,
+  { min: min_value, max: max_value }: Partial<Record<'min' | 'max', number>>
+): ApplicationCommandOptionLimitedNumber => ({
+  name: option,
+  description: `The ${option} of the timestamp.`,
+  type: CommandOptionType.INTEGER,
+  required: true,
+  ...(min_value && { min_value }),
+  ...(max_value && { max_value })
 });
 
 export const titleCase = (input: string) => input.charAt(0).toUpperCase() + input.slice(1);

@@ -6,7 +6,7 @@ import { casual as chrono } from 'chrono-node';
 
 import { time } from '../util/markup';
 import { TimeStyle } from '../util/types';
-import { plural } from '../util/common';
+import { plural, timeOptionFactory as timeOption } from '../util/common';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -134,6 +134,25 @@ export default class TemporalCommand extends SlashCommand {
               max_value: 15
             }
           ]
+        },
+        {
+          name: 'exact',
+          description: 'Construct a Discord timestamp.',
+          type: CommandOptionType.SUB_COMMAND,
+          options: [
+            timeOption('year', { min: -265000, max: 275000 }),
+            {
+              name: 'month',
+              description: 'The month of the timestamp.',
+              type: CommandOptionType.INTEGER,
+              choices: months.map((month, index) => ({ name: month, value: index })),
+              required: true
+            },
+            timeOption('day', { min: 1, max: 31 }),
+            timeOption('hour', { min: 0, max: 23 }),
+            timeOption('minute', { min: 0, max: 60 }),
+            timeOption('second', { min: 0, max: 60 })
+          ]
         }
       ]
     });
@@ -166,8 +185,12 @@ export default class TemporalCommand extends SlashCommand {
 
       case 'parse':
         return this.#runTemporalParse(ctx, options);
+
+      case 'exact':
+        return this.#runTemporalExact(ctx, options);
     }
   }
+  
   async #runTemporalNow(ctx: CommandContext): Promise<MessageOptions> {
     const { invokedAt } = ctx;
 
@@ -283,6 +306,20 @@ export default class TemporalCommand extends SlashCommand {
       ].join('\n')
     };
   }
+
+  async #runTemporalExact(ctx: CommandContext, options: TemporalExactOptions): Promise<MessageOptions> {
+    const { year, month, day, hour, minute, second } = options;
+
+    const exact = new Date(year, month, day, hour, minute, second);
+    const isFuture = exact.valueOf() > ctx.invokedAt;
+
+    return {
+      content: `The provided arguments construct the timestamp of ${this.#showAndTell(
+        time(exact, TimeStyle.LONG_FORMAT)
+      )} ${time(exact, TimeStyle.RELATIVE_TIME)}`,
+      ephemeral: true
+    };
+  }
 }
 
 interface TemporalOccuranceOptions {
@@ -301,6 +338,15 @@ interface TemporalParseOptions {
   forward_date: boolean; // = true
   select?: /* = */ 'first' | 'last'; // = 'first'
   count?: number; // = 3
+}
+
+interface TemporalExactOptions {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
 }
 
 const months = [
