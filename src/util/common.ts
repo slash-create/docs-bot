@@ -39,6 +39,8 @@ export const hashMapToString = (input: object, connector: string = ' = ', sepera
     .map((key) => key + connector + input[key])
     .join(seperator);
 
+export const plural = (n, one, more = one + 's') => (n === 1 ? one : more);
+
 export const standardObjects = {
   Object: 'Object',
   [typeof {}]: 'Object',

@@ -180,6 +180,11 @@
     ajv-formats "^2.1.1"
     fast-uri "^2.0.0"
 
+"@fastify/busboy@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-2.0.0.tgz#f22824caff3ae506b18207bad4126dbc6ccdb6b8"
+  integrity sha512-JUFJad5lv7jxj926GPgymrWQxxjPYuJNiNjNMzqT+HiuP6Vl3dk5xzG+8sTX96np0ZAluvaMzPsjhHZ5rNuNQQ==
+
 "@fastify/deepmerge@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@fastify/deepmerge/-/deepmerge-1.1.0.tgz#91f0a5a27034ff76b7bece63a5906894940ace82"
@@ -645,6 +650,13 @@ chalk@^4.0.0, chalk@^4.1.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+chrono-node@^2.7.0:
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/chrono-node/-/chrono-node-2.7.0.tgz#2c25ed3d810ccd1fceabb630f70922af9600e45e"
+  integrity sha512-0s2vv89LmsbgoibV0AIVgNnGqlU8N5yCCVZXvc3mRCjnmlG/gJw1hCYOmNwjB+AIuwZQdKTXfwvsHDRTs6pwcg==
+  dependencies:
+    dayjs "^1.10.0"
+
 cliui@^7.0.4:
   version "7.0.4"
   resolved "https://registry.yarnpkg.com/cliui/-/cliui-7.0.4.tgz#a0265ee655476fc807aea9df3df8df7783808b4f"
@@ -720,6 +732,11 @@ cross-spawn@^7.0.0, cross-spawn@^7.0.2, cross-spawn@^7.0.3:
     path-key "^3.1.0"
     shebang-command "^2.0.0"
     which "^2.0.1"
+
+dayjs@^1.10.0, dayjs@^1.11.10:
+  version "1.11.10"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.10.tgz#68acea85317a6e164457d6d6947564029a6a16a0"
+  integrity sha512-vjAczensTgRcqDERK0SR2XMwsF/tSvnvlv6VcF2GIhg6Sx4yOIt/irsr1RDJsKiIyBzJDpCoXiWWq28MqH2cnQ==
 
 dayjs@^1.10.5:
   version "1.11.5"
@@ -969,6 +986,11 @@ eventemitter3@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.0.tgz#084eb7f5b5388df1451e63f4c2aafd71b217ccb3"
   integrity sha512-riuVbElZZNXLeLEoprfNYoDSwTBRR44X3mnhdI1YcnENpWTCsTTVZ2zFuqQcpoyqPQIUXdiPEU0ECAq0KQRaHg==
+
+eventemitter3@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.1.tgz#53f5ffd0a492ac800721bb42c66b841de96423c4"
+  integrity sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==
 
 events@^3.3.0:
   version "3.3.0"
@@ -1716,15 +1738,6 @@ signal-exit@^4.0.1:
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-4.0.1.tgz#96a61033896120ec9335d96851d902cc98f0ba2a"
   integrity sha512-uUWsN4aOxJAS8KOuf3QMyFtgm1pkb6I+KRZbRF/ghdf5T7sM+B1lLLzPDxswUjkmHyxQAVzEgG35E3NzDM9GVw==
 
-slash-create@^5.11.0:
-  version "5.11.0"
-  resolved "https://registry.yarnpkg.com/slash-create/-/slash-create-5.11.0.tgz#2eeaa435bfac740680e44c081334ad11c9dde146"
-  integrity sha512-FIJxEv6gOXLCYf1ds7mdcsJywyrw359h2ytACEJ9DL/8LQ6CujAov4bbnZjSvgmr/QsztUvZEX9B4bIQjQtoNA==
-  dependencies:
-    eventemitter3 "^5.0.0"
-    lodash.isequal "^4.5.0"
-    tweetnacl "^1.0.3"
-
 slash-create@^5.12.0:
   version "5.12.0"
   resolved "https://registry.yarnpkg.com/slash-create/-/slash-create-5.12.0.tgz#bd4afa9b2a62eda9b5f6794839ca2f7006ad6d15"
@@ -1734,10 +1747,20 @@ slash-create@^5.12.0:
     lodash.isequal "^4.5.0"
     tweetnacl "^1.0.3"
 
-slash-up@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/slash-up/-/slash-up-1.3.0.tgz#c23e094c54ad4ed41ede58dd48e7747041580886"
-  integrity sha512-M3KwqVWyN8tY0mYtQXdjF23zbSh0UErZ/4jQy9+zntvJV9gdYxCFajZ1wbosdoat3fvAEcH3h6LI14A52PNQWg==
+slash-create@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/slash-create/-/slash-create-6.0.1.tgz#5f8de4059611539037bbacf3da067c38aa2bbc5d"
+  integrity sha512-2KZc2WLMNLGzKlEX/uQN47qtL/TUKfl3Vd2/EPJEqYHXHWABeyYfrtelWZwjGJevYNYKNnVoHkQ87g6pwRRQ/A==
+  dependencies:
+    eventemitter3 "^5.0.1"
+    lodash.isequal "^4.5.0"
+    tweetnacl "^1.0.3"
+    undici "^5.27.0"
+
+slash-up@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/slash-up/-/slash-up-1.4.2.tgz#879318751cd41342e98f3faa674acc636ff34631"
+  integrity sha512-Ppm+sJ8eA+sZK58aQu4Pmlpbyo/LvIaQDCO5dp0zWnHS4dmAHgsrgWhJocNePkqbXGtPHLSOL7+BFwwKWHitfg==
   dependencies:
     "@esbuild-kit/cjs-loader" "^2.4.2"
     ansi-colors "^4.1.3"
@@ -1748,7 +1771,7 @@ slash-up@^1.3.0:
     enquirer "^2.3.6"
     find-up "5.0.0"
     log-symbols "4.1.0"
-    slash-create "^5.11.0"
+    slash-create "^6.0.1"
     yargs "^17.7.1"
 
 slash@^3.0.0:
@@ -1917,6 +1940,13 @@ typescript@^4.8.4:
   version "4.8.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.8.4.tgz#c464abca159669597be5f96b8943500b238e60e6"
   integrity sha512-QCh+85mCy+h0IGff8r5XWzOVSbBO+KfeYrMQh7NJ58QujwcE22u+NUSmUxqF+un70P9GXKxa2HCNiTTMJknyjQ==
+
+undici@^5.27.0:
+  version "5.27.2"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-5.27.2.tgz#a270c563aea5b46cc0df2550523638c95c5d4411"
+  integrity sha512-iS857PdOEy/y3wlM3yRp+6SNQQ6xU0mmZcwRSriqk+et/cwWAtwmIGf6WkoDN2EK/AMdCO/dfXzIwi+rFMrjjQ==
+  dependencies:
+    "@fastify/busboy" "^2.0.0"
 
 uri-js@^4.2.2:
   version "4.4.1"
