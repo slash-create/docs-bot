@@ -37,20 +37,23 @@ export default class TemporalCommand extends SlashCommand {
                 { name: 'Thursday', value: 4 },
                 { name: 'Friday', value: 5 },
                 { name: 'Saturday', value: 6 }
-              ]
+              ],
+              required: true
             },
             {
               name: 'date',
               description: 'The date of the month to cycle through = [1, 31].',
               type: CommandOptionType.INTEGER,
               min_value: 1,
-              max_value: 31
+              max_value: 31,
+              required: true
             },
             {
               name: 'month',
               description: 'The month of the year to cycle through.',
               type: CommandOptionType.INTEGER,
-              choices: months.map((month, index) => ({ name: month, value: index }))
+              choices: months.map((month, index) => ({ name: month, value: index })),
+              required: true
             },
             // Sat Sep 13 275760 is the actual limit
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date#:~:text=relative%20to%20the%20epoch
@@ -59,14 +62,16 @@ export default class TemporalCommand extends SlashCommand {
               description: 'The year to start the search from.',
               type: CommandOptionType.INTEGER,
               min_value: -265000,
-              max_value: 275000
+              max_value: 275000,
+              required: true
             },
             {
               name: 'end_year',
               description: 'The year to end the search at.',
               type: CommandOptionType.INTEGER,
               min_value: -265000,
-              max_value: 275000
+              max_value: 275000,
+              required: true
             },
             {
               name: 'select',
@@ -76,8 +81,7 @@ export default class TemporalCommand extends SlashCommand {
                 { name: 'First', value: 'first' },
                 { name: 'Last', value: 'last' },
                 { name: 'Random', value: 'random' }
-              ],
-              required: false
+              ]
             },
             {
               name: 'count',
