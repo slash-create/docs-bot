@@ -216,6 +216,12 @@ export default class TemporalCommand extends SlashCommand {
       count = 5
     }: TemporalOccuranceOptions = options;
 
+    if (startYear > endYear)
+      return {
+        content: `Your selected range (\`${startYear} > ${endYear}\`) is inverted, please swap the arguments.`,
+        ephemeral: true
+      };
+
     if (date > 28 && month === 1)
       // 28th-31st Feb
       return { content: `\`${date}/${months[month]}\` is not possible, please try again.` };
