@@ -51,6 +51,30 @@ $ npx slash-up list
 /search - Search for a documentation entry.
     query* string - The query to search all entries.
 
+/temporal - Simplified use of Discord's time syntax.
+    now - Get the current time.
+    occurrences - Get all occurrences of a day of the week for a day/month set between two specified years.
+        weekday integer - The day of the week to focus on.
+        date integer - The date of the month to cycle through = [1, 31].
+        month integer - The month of the year to cycle through.
+        start_year integer - The year to start the search from.
+        end_year integer - The year to end the search at.
+        select? string - Selection type. (default = "first")
+        count? integer - Selection count. (default = 5)
+    parse - Parse string query with chrono-node parse. (GitHub: https://github.com/wanasit/chrono)
+        query string - The query to parse (context around date strings are not provided in response).
+        instant? integer - A time instant. If it is for the timestamp markup, add three zeros to the end. (default = {now})
+        forward_date? boolean - Should the parser only return results forward of the temporal instant. (default = false)
+        select? string - Selection type. (default = "first")
+        count? integer - Selection count. (default = 3)
+    exact - Construct a Discord timestamp.
+        year integer - The year of the timestamp.
+        month integer - The month of the timestamp.
+        day integer - The day of the timestamp.
+        hour integer - The hour of the timestamp.
+        minute integer - The minute of the timestamp.
+        second integer - The second of the timestamp.
+
 /debug - Debug provided entities for interaction contexts.
     user - Print the payload for yourself or the target user.
         target? user - The user to target for debug. (default = @me)
@@ -82,6 +106,10 @@ Debug User (USER) -> /debug user target: {SELECTED}
   | **(Announcement) Thread (10)** | **(Channel) Thread (11)** | **(Forum) Thread (11)** |
   | ------------------------------ | ------------------------- | ----------------------- |
   | ![announcement_thread](./assets/commands/debug/channel/announce-thread.png) | ![channel_thread](./assets/commands/debug/channel/channel-thread.png) | ![forum_thread](./assets/commands/debug/channel/forum-thread.png) |
+
+- `/temporal now`
+
+  ![Temporal Command](assets/commands/temporal.png)
 
 Full set of example responses are available from [the assets folder](./assets/commands/).
 
