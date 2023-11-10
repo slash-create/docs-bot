@@ -30,7 +30,7 @@ export default class MessageDebugCommand extends SlashCommand {
     const target_url = `https://discord.com/channels/${origin}/${ctx.data.channel_id}/${target_id}`;
 
     // eslint-disable-next-line prettier/prettier
-    if (ctx.targetMessage.author.id !== this.creator.options.applicationID)
+    if (ctx.targetMessage.author.id === this.creator.options.applicationID)
       this.tryDeferredAdjustment(ctx);
 
     return ChatDebugCommand.resolveFinalPayload(rawPayload, 'message', target_url);
