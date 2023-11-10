@@ -6,7 +6,8 @@ import { casual as chrono } from 'chrono-node';
 
 import { time } from '../util/markup';
 import { TimeStyle } from '../util/types';
-import { plural, timeOptionFactory as timeOption } from '../util/common';
+import { plural } from '../util/common';
+import { timeOptionFactory as timeOption } from '../util/commandOptions';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -279,9 +280,7 @@ export default class TemporalCommand extends SlashCommand {
       .parse(query, { instant: new Date(instant ?? ctx.invokedAt) /* timezone*/ }, { forwardDate })
       .map(
         (entry) =>
-          `${this.#showAndTell(shortTime(entry.start.date()))}${
-            entry.end ? ` until ${shortTime(entry.end.date())}` : ''
-          }`
+          this.#showAndTell(shortTime(entry.start.date())) + (entry.end ? ` until ${shortTime(entry.end.date())}` : '')
       );
 
     if (select === 'last') results.reverse();
@@ -341,19 +340,13 @@ interface TemporalExactOptions {
   second: number;
 }
 
-const days = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday'
-]
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const months = [
+  /* eslint-disable prettier/prettier*/
   /* Q1 */ 'January', 'Febuary',  'March',
   /* Q2 */ 'April',   'May',      'June',
   /* Q3 */ 'July',    'August',   'September',
   /* Q4 */ 'October', 'November', 'December'
+  /* eslint-enable prettier/prettier */
 ];

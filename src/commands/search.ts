@@ -7,7 +7,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { queryOption } from '../util/common';
+import { queryOption } from '../util/commandOptions';
 import TypeNavigator from '../util/typeNavigator';
 import { command } from '../util/markup';
 

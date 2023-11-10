@@ -109,6 +109,7 @@ export default class ChatDebugCommand extends SlashCommand {
 
         const field = `${subCommand}s` as const;
 
+        // eslint-disable-next-line prettier/prettier
         rawPayload = subCommand === 'channel' && !target
           ? ctx.data.channel
           : ctx.data.data.resolved[field][target];
