@@ -95,7 +95,10 @@ export default class TemporalCommand extends SlashCommand {
         },
         {
           name: 'parse',
-          description: 'Parse string query with chrono-node parse. (GitHub: https://github.com/wanasit/chrono)',
+          description: [
+            'Parse string query with chrono-node parse from UTC time.',
+            '(GitHub: https://github.com/wanasit/chrono)'
+          ].join('\n'),
           type: CommandOptionType.SUB_COMMAND,
           options: [
             {
@@ -176,7 +179,7 @@ export default class TemporalCommand extends SlashCommand {
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
     const { locale, focused, options } = ctx;
-    const intlDate = new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'full' });
+    const intlDate = new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'full', timeZone: 'UTC' });
 
     switch (focused) {
       case 'instant': {
