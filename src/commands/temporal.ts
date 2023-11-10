@@ -216,7 +216,7 @@ export default class TemporalCommand extends SlashCommand {
       count = 5
     }: TemporalOccuranceOptions = options;
 
-    if (startYear > endYear)
+    if (endYear - startYear <= 0)
       return {
         content: `Your selected range (\`${endYear} - ${startYear} <= 0\`) is inverted, please swap the arguments.`,
         ephemeral: true
@@ -224,7 +224,7 @@ export default class TemporalCommand extends SlashCommand {
 
     if (date > 28 && month === 1)
       // 28th-31st Feb
-      return { content: `\`${date}/${months[month]}\` is not possible, please try again.` };
+      return { content: `\`${date}/${months[month]}\` is not possible, please try again.`, ephemeral: true };
 
     const fDate = new Date(0, month, date, 0, 0, 0);
     const occurances: number[] = [];
@@ -240,7 +240,7 @@ export default class TemporalCommand extends SlashCommand {
           fDate.setUTCFullYear(endYear - attempts, month, date);
           break;
         case 'random':
-          fDate.setUTCFullYear(randomInt(startYear, endYear), month, date);
+          fDate.setUTCFullYear(randomInt(startYear, endYear + 1), month, date);
           break;
       }
 
