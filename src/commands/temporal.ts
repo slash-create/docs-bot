@@ -1,6 +1,14 @@
 import { randomInt } from 'node:crypto';
 
-import { CommandContext, CommandOptionType, MessageOptions, SlashCommand, SlashCreator } from 'slash-create';
+import {
+  AutocompleteChoice,
+  AutocompleteContext,
+  CommandContext,
+  CommandOptionType,
+  MessageOptions,
+  SlashCommand,
+  SlashCreator
+} from 'slash-create';
 
 import { casual as chrono } from 'chrono-node';
 
@@ -103,7 +111,8 @@ export default class TemporalCommand extends SlashCommand {
                 'If it is for the timestamp markup, add three zeros to the end.',
                 '(default = {now})'
               ].join(' '),
-              type: CommandOptionType.INTEGER
+              type: CommandOptionType.INTEGER,
+              autocomplete: true
             },
             {
               name: 'forward_date',
@@ -164,6 +173,23 @@ export default class TemporalCommand extends SlashCommand {
       default: return n + 'th';
     }
   };
+
+  async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
+    const { locale, focused, options } = ctx;
+    const intlDate = new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'full' });
+
+    switch (focused) {
+      case 'instant': {
+        // /temporal parse ... instant: integer
+        const { instant: value } = options.parse as TemporalParseOptions;
+
+        return [{ name: intlDate.format(value), value }];
+      }
+
+      default:
+        return [];
+    }
+  }
 
   async run(ctx: CommandContext): Promise<MessageOptions> {
     const [subCommand] = ctx.subcommands;
@@ -326,7 +352,7 @@ interface TemporalOccuranceOptions {
 interface TemporalParseOptions {
   query: string;
   instant?: number; // = {invokedAt}
-  forward_date: boolean; // = true
+  forward_date?: boolean; // = true
   select?: /* = */ 'first' | 'last'; // = 'first'
   count?: number; // = 3
 }
@@ -344,9 +370,9 @@ const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 const months = [
   /* eslint-disable prettier/prettier*/
-  /* Q1 */ 'January', 'Febuary',  'March',
-  /* Q2 */ 'April',   'May',      'June',
-  /* Q3 */ 'July',    'August',   'September',
+  /* Q1 */ 'January', 'Febuary', 'March',
+  /* Q2 */ 'April', 'May', 'June',
+  /* Q3 */ 'July', 'August', 'September',
   /* Q4 */ 'October', 'November', 'December'
   /* eslint-enable prettier/prettier */
 ];
