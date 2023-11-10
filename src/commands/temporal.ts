@@ -218,7 +218,7 @@ export default class TemporalCommand extends SlashCommand {
 
     if (startYear > endYear)
       return {
-        content: `Your selected range (\`${startYear} > ${endYear}\`) is inverted, please swap the arguments.`,
+        content: `Your selected range (\`${endYear} - ${startYear} <= 0\`) is inverted, please swap the arguments.`,
         ephemeral: true
       };
 
