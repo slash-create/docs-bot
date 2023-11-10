@@ -51,7 +51,7 @@ $ npx slash-up list
 /search - Search for a documentation entry.
     query* string - The query to search all entries.
 
-/temporal - Simplified use of Discord's time syntax.
+/temporal - Simplified use of Discord\'s time syntax.
     now - Get the current time.
     occurrences - Get all occurrences of a day of the week for a day/month set between two specified years.
         weekday integer - The day of the week to focus on.
