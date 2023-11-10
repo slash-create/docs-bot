@@ -12,6 +12,8 @@ import {
   SlashCreator
 } from 'slash-create';
 
+import { ephemeralResponse as _ } from '../../util/common';
+
 enum MentionPrefixes {
   user = '@',
   channel = '#',
@@ -150,14 +152,13 @@ export default class ChatDebugCommand extends SlashCommand {
 
     const codeBlock = `\`\`\`json\n${stringPayload}\n\`\`\``;
 
-    return {
+    return _({
       content: [header, codeBlock].join('\n'),
       allowedMentions: {
         everyone: false,
         users: false,
         roles: false
-      },
-      ephemeral: true
-    };
+      }
+    });
   }
 }
