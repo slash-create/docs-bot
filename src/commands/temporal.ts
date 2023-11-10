@@ -6,7 +6,8 @@ import { casual as chrono } from 'chrono-node';
 
 import { time } from '../util/markup';
 import { TimeStyle } from '../util/types';
-import { plural, timeOptionFactory as timeOption } from '../util/common';
+import { plural, ephemeralResponse as _ } from '../util/common';
+import { timeOptionFactory as timeOption } from '../util/commandOptions';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -192,7 +193,7 @@ export default class TemporalCommand extends SlashCommand {
       TimeStyle.RELATIVE_TIME
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
-    return { content: `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`, ephemeral: true };
+    return _(`This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`);
   }
 
   /**
@@ -215,9 +216,12 @@ export default class TemporalCommand extends SlashCommand {
       count = 5
     }: TemporalOccuranceOptions = options;
 
+    if (endYear - startYear <= 0)
+      return _(`Your selected range (\`${endYear} - ${startYear} <= 0\`) is inverted, please swap the arguments.`);
+
     if (date > 28 && month === 1)
       // 28th-31st Feb
-      return { content: `\`${date}/${months[month]}\` is not possible, please try again.` };
+      return _(`\`${date}/${months[month]}\` is not possible, please try again.`);
 
     const fDate = new Date(0, month, date, 0, 0, 0);
     const occurances: number[] = [];
@@ -233,7 +237,7 @@ export default class TemporalCommand extends SlashCommand {
           fDate.setUTCFullYear(endYear - attempts, month, date);
           break;
         case 'random':
-          fDate.setUTCFullYear(randomInt(startYear, endYear), month, date);
+          fDate.setUTCFullYear(randomInt(startYear, endYear + 1), month, date);
           break;
       }
 
@@ -254,6 +258,7 @@ export default class TemporalCommand extends SlashCommand {
 
     if (select !== 'random') occurances.sort((a, b) => (select === 'first' ? a - b : b - a));
 
+    /* eslint-disable prettier/prettier */
     const prefix = select === 'random' ? 'A selection from' : `The ${select}`;
     const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(date)}`;
     const ordinalQuery = `**${occurances.length} ${plural(occurances.length, 'occurance')}** of ${dateString}`;
@@ -261,13 +266,11 @@ export default class TemporalCommand extends SlashCommand {
 
     const header = `${prefix} ${ordinalQuery} between ${yearRange} were found in ${attempts} ${plural(attempts, 'attempt')}.`;
 
-    return {
-      ephemeral: true,
-      content: [
-        header,
-        occurances.map((date) => `- ${this.#showAndTell(time(date, TimeStyle.LONG_DATE))}`).join('\n')
-      ].join('\n')
-    };
+    return _([
+      header,
+      ...occurances.map((date) => '- ' + this.#showAndTell(time(date, TimeStyle.LONG_DATE)))
+    ].join('\n'));
+    /* eslint-enable prettier/prettier */
   }
 
   async #runTemporalParse(ctx: CommandContext, options: TemporalParseOptions): Promise<MessageOptions> {
@@ -279,9 +282,7 @@ export default class TemporalCommand extends SlashCommand {
       .parse(query, { instant: new Date(instant ?? ctx.invokedAt) /* timezone*/ }, { forwardDate })
       .map(
         (entry) =>
-          `${this.#showAndTell(shortTime(entry.start.date()))}${
-            entry.end ? ` until ${shortTime(entry.end.date())}` : ''
-          }`
+          this.#showAndTell(shortTime(entry.start.date())) + (entry.end ? ` until ${shortTime(entry.end.date())}` : '')
       );
 
     if (select === 'last') results.reverse();
@@ -290,13 +291,12 @@ export default class TemporalCommand extends SlashCommand {
 
     const suffix = instant ? ` (Relative to ${shortTime(instant)})` : '';
 
-    return {
-      ephemeral: true,
-      content: [
+    return _(
+      [
         `The ${select} **${results.length} ${plural(results.length, 'result')}** from your query.` + suffix,
         ...results.map((value, index) => `${index + 1}. ${value}`)
       ].join('\n')
-    };
+    );
   }
 
   async #runTemporalExact(ctx: CommandContext, options: TemporalExactOptions): Promise<MessageOptions> {
@@ -305,12 +305,11 @@ export default class TemporalCommand extends SlashCommand {
     const exact = new Date(year, month, day, hour, minute, second);
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
-    return {
-      content: `The provided arguments construct the timestamp of ${this.#showAndTell(
+    return _(
+      `The provided arguments construct the timestamp of ${this.#showAndTell(
         time(exact, TimeStyle.LONG_FORMAT)
-      )} ${time(exact, TimeStyle.RELATIVE_TIME)}`,
-      ephemeral: true
-    };
+      )} ${time(exact, TimeStyle.RELATIVE_TIME)}`
+    );
   }
 }
 
@@ -341,19 +340,13 @@ interface TemporalExactOptions {
   second: number;
 }
 
-const days = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday'
-]
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const months = [
+  /* eslint-disable prettier/prettier*/
   /* Q1 */ 'January', 'Febuary',  'March',
   /* Q2 */ 'April',   'May',      'June',
   /* Q3 */ 'July',    'August',   'September',
   /* Q4 */ 'October', 'November', 'December'
+  /* eslint-enable prettier/prettier */
 ];

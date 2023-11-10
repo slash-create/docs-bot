@@ -29,6 +29,7 @@ export default class MessageDebugCommand extends SlashCommand {
     const origin = 'guild_id' in ctx.data ? ctx.data.guild_id : '@me';
     const target_url = `https://discord.com/channels/${origin}/${ctx.data.channel_id}/${target_id}`;
 
+    // eslint-disable-next-line prettier/prettier
     if (ctx.targetMessage.author.id === this.creator.options.applicationID)
       this.tryDeferredAdjustment(ctx);
 

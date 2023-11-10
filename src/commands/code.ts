@@ -14,7 +14,7 @@ import {
 } from 'slash-create';
 
 import { component as deleteComponent } from '../components/delete-repsonse';
-import { lineNumbersOption, queryOption, shareOption } from '../util/common';
+import { lineNumbersOption, queryOption, shareOption } from '../util/commandOptions';
 import fileCache from '../util/fileCache';
 import { buildGitHubLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';

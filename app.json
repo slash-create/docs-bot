@@ -1,8 +1,8 @@
 {
-  "name": "/create (TypeScript)",
-  "description": "Deploy a slash-create server for Discord interactions.",
-  "repository": "https://github.com/Snazzah/slash-create-template/tree/typescript",
-  "logo": "https://slash-create.js.org/static/logo-nomargin.png",
+  "name": "slash-create Docs Bot",
+  "description": "A bot built using slash-create for its documentation.",
+  "repository": "https://github.com/slash-create/docs-bot",
+  "logo": "https://github.com/slash-create.png",
   "scripts": {
     "postdeploy": "npx slash-up sync"
   },

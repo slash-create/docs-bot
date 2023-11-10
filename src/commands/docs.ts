@@ -14,7 +14,9 @@ import {
 } from 'slash-create';
 
 import { component as deleteComponent } from '../components/delete-repsonse';
-import { SC_RED, standardObjects, titleCase, docsOptionFactory, shareOption } from '../util/common';
+import { titleCase } from '../util/common';
+import { SC_RED, standardObjects } from '../util/constants';
+import { shareOption, docsOptionFactory } from '../util/commandOptions';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
 import {
   AnyParentDescriptor,
@@ -279,8 +281,9 @@ export default class DocumentationCommand extends SlashCommand {
     return params.map((argument, index) => ({
       name: index === 0 ? 'Arguments' : '\u200b',
       value: [
-        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${argument.default ? `= ${argument.default}` : ''
-          }`.trim(),
+        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
+          argument.default ? `= ${argument.default}` : ''
+        }`.trim(),
         'description' in argument ? this.parseDocString(argument.description, parent) : ''
       ].join('\n')
     }));
