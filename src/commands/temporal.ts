@@ -16,6 +16,7 @@ import { time } from '../util/markup';
 import { TimeStyle } from '../util/types';
 import { plural, ephemeralResponse as _ } from '../util/common';
 import { timeOptionFactory as timeOption } from '../util/commandOptions';
+import { resolveStarSign } from '../util/StarSign';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -177,6 +178,8 @@ export default class TemporalCommand extends SlashCommand {
     }
   };
 
+  #ordinalDate = (month: number, day: number) => `${months[month]} ${this.#ordinal(day)}`;
+
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
     const { locale, focused, options } = ctx;
     const intlDate = new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'full', timeZone: 'UTC' });
@@ -215,6 +218,7 @@ export default class TemporalCommand extends SlashCommand {
 
   async #runTemporalNow(ctx: CommandContext): Promise<MessageOptions> {
     const { invokedAt } = ctx;
+    const invokedTime = new Date(invokedAt);
 
     const [longTime, shortDate, relativeTime] = [
       TimeStyle.LONG_TIME,
@@ -222,7 +226,21 @@ export default class TemporalCommand extends SlashCommand {
       TimeStyle.RELATIVE_TIME
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
-    return _(`This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`);
+    const starSign = resolveStarSign(invokedAt);
+    const { since, until } = starSign.range;
+
+    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0)
+      .setUTCFullYear(invokedTime.getFullYear() + +(since.month > until.month));
+
+    const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
+    const starSignIndent = `> ${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`;
+    const starSignRange = [
+      `from **${this.#ordinalDate(since.month, since.day)}**`,
+      `to **${this.#ordinalDate(until.month, until.day)}**`,
+      this.#showAndTell(time(relativeOffset, TimeStyle.RELATIVE_TIME))
+    ].join(' ');
+
+    return _(`${invokedTimeString}\n${starSignIndent} ${starSignRange}`);
   }
 
   /**
