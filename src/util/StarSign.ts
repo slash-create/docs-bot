@@ -41,7 +41,7 @@ class StarSign implements IStarSign {
 
   public get range() {
     return {
-      since: { month: this.prev.month, day: this.prev.day },
+      since: { month: this.prev.month, day: this.prev.day + 1 },
       until: { month: this.month, day: this.day }
     };
   }
