@@ -1,4 +1,4 @@
-import { MessageOptions } from 'slash-create';
+import { MessageOptions, User } from 'slash-create';
 
 export const titleCase = (input: string) => input.charAt(0).toUpperCase() + input.slice(1);
 
@@ -15,3 +15,19 @@ export const ephemeralResponse = (content: MessageOptions | string): MessageOpti
     ? { content, ephemeral: true }
     : { ...content, ephemeral: true };
 };
+
+export function trimContent(strings: TemplateStringsArray, ...args: any[]) {
+  return String.raw(strings, ...args).replace(/\t+|\n *(?!> |\d\.|- |\* )| {2,}/gm, '');
+};
+
+export function displayUser(user: User) {
+  const userName = user.globalName ?? user.username;
+  const userDiscrim = user.discriminator !== '0' ? `#${user.discriminator}` : '';
+
+  return `${userName + userDiscrim} (${user.id})`;
+};
+
+// https://stackoverflow.com/a/10952773
+export function numLength (num: number) {
+  return Math.ceil(Math.log10(num + 1));
+}
