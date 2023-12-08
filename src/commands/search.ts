@@ -8,7 +8,7 @@ import {
 } from 'slash-create';
 
 import { queryOption } from '../util/commandOptions';
-import { ephemeralResponse as _ } from '../util/common';
+import { ephemeralResponse as _, trimContent } from '../util/common';
 import TypeNavigator from '../util/typeNavigator';
 import { command } from '../util/markup';
 
@@ -47,12 +47,9 @@ export default class SearchCommand extends SlashCommand {
 
     const commandMention = command(['docs', subtype], this.docsCommand.ids.get('global'));
 
-    return _(
-      [
-        `You selected \`${query}\`, this is not a entry retrieval command.`,
-        '*Entries found in this command may include internal structures not included on the primary command.*',
-        `> Please use \`${commandString.join(' ')}\` - ${commandMention}.`
-      ].join('\n')
-    );
+    return _(trimContent`
+      You selected \`${query}\`, this is not a entry retrieval command.
+      *Entries found in this command may include internal structures not included on the primary command.*
+      > Please use \`${commandString.join(' ')}\` - ${commandMention}.`);
   }
 }

@@ -18,6 +18,7 @@ import { lineNumbersOption, queryOption, shareOption } from '../util/commandOpti
 import fileCache from '../util/fileCache';
 import { buildGitHubLink } from '../util/linkBuilder';
 import TypeNavigator from '../util/typeNavigator';
+import { ephemeralResponse as _, numLength, trimContent } from '../util/common';
 
 export default class CodeCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -103,10 +104,7 @@ export default class CodeCommand extends SlashCommand {
         const { query, around = 3, offset = 0 } = options;
 
         if (!(query in TypeNavigator.typeMap.all))
-          return {
-            content: `Entity \`${query}\` was not found in type map.`,
-            ephemeral: true
-          };
+          return _(`Entity \`${query}\` was not found in type map.`);
 
         const { meta } = TypeNavigator.findFirstMatch(query);
 
@@ -121,10 +119,7 @@ export default class CodeCommand extends SlashCommand {
         let { query, start, end } = options;
 
         if (!TypeNavigator.knownFiles.includes(query))
-          return {
-            content: `Could not find ${query} in known files.`,
-            ephemeral: true
-          };
+          return _(`Could not find ${query} in known files.`)
 
         if (end < start) [start, end] = [end, start]; // swap if inverted
 
@@ -140,14 +135,10 @@ export default class CodeCommand extends SlashCommand {
     const lines = body.split('\n');
 
     if (startLine > lines.length) {
-      return {
-        ephemeral: true,
-        content: [
-          `**Failover:** Line selection out of bounds.`,
-          `> Start Line: \`${startLine + 1}\``,
-          `> Total Lines: \`${lines.length}\``
-        ].join('\n')
-      };
+      return _(trimContent`
+          **Failover:** Line selection out of bounds.
+          > Start Line: \`${startLine + 1}\`
+          > Total Lines: \`${lines.length}\``);
     }
 
     const amendNotes = new Set<string>();
@@ -266,7 +257,7 @@ export default class CodeCommand extends SlashCommand {
   }
 
   private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean) =>
-    (includeNumbers ? `/* ${`${index}`.padStart(`${lastLine}`.length, ' ')} */ ` : '') + line;
+    (includeNumbers ? `/* ${`${index}`.padStart(numLength(lastLine), ' ')} */ ` : '') + line;
 
   private generateContentHeader = (
     file: string,

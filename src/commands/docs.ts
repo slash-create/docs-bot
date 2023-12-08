@@ -14,7 +14,7 @@ import {
 } from 'slash-create';
 
 import { component as deleteComponent } from '../components/delete-repsonse';
-import { titleCase } from '../util/common';
+import { ephemeralResponse as _, displayUser, titleCase } from '../util/common';
 import { SC_RED, standardObjects } from '../util/constants';
 import { shareOption, docsOptionFactory } from '../util/commandOptions';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
@@ -145,8 +145,8 @@ export default class DocumentationCommand extends SlashCommand {
     };
 
     if (options.share) {
-      embed.footer.text += ` | Requested by ${ctx.user.username}#${ctx.user.discriminator}`;
-      embed.footer.icon_url = ctx.member ? ctx.member.avatarURL : ctx.user.avatarURL;
+      embed.footer.text += ` | Requested by ${displayUser(ctx.user)}`;
+      embed.footer.icon_url = (ctx.member ? ctx.member : ctx.user).avatarURL;
     }
 
     const fragments: [string, string?] = [null, null];
@@ -159,10 +159,7 @@ export default class DocumentationCommand extends SlashCommand {
         try {
           typeMeta = descriptor.meta;
         } catch {
-          return {
-            content: 'Entity was `null`, please check arguments.',
-            ephemeral: true
-          };
+          return _(`Entity was \`null\`, please check arguments.`);
         }
 
         embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
@@ -176,13 +173,9 @@ export default class DocumentationCommand extends SlashCommand {
         break;
       }
       default: {
-        if (options[calledType] === 'null') {
+        if (options[calledType] === 'null')
           // yes... literal null
-          return {
-            content: 'Entity was `null`, please check arguments.',
-            ephemeral: true
-          };
-        }
+          return _(`Entity was \`null\`, please check arguments.`);
 
         const parentEntry = TypeNavigator.findFirstMatch(options.class) as ClassDescriptor;
         const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
