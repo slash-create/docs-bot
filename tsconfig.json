@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "outDir": "dist",
     "strict": false,
     "esModuleInterop": true,
+    "declaration": true,
+    "noErrorTruncation": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ESNext",
+    "outDir": "dist",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "moduleResolution": "Node16",
-    "typeRoots": ["./node_modules/@types", "types"]
+    "typeRoots": ["./node_modules/@types", "types"],
+    "sourceMap": true
   },
   "include": [
     "./src/**/*"

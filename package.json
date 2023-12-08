@@ -14,26 +14,27 @@
   "dependencies": {
     "bent": "^7.3.12",
     "cat-loggr": "^1.2.2",
-    "chrono-node": "^2.7.0",
+    "chrono-node": "^2.7.3",
     "common-tags": "^1.8.2",
     "dayjs": "^1.11.10",
-    "dotenv": "^16.0.3",
-    "fastify": "^4.10.2",
+    "dotenv": "^16.3.1",
+    "fastify": "^4.24.3",
     "fuzzy": "^0.1.3",
-    "slash-create": "^5.12.0"
+    "slash-create": "^6.0.1"
   },
   "devDependencies": {
-    "@types/express": "^4.17.11",
-    "@types/node": "^18.6.0",
-    "@typescript-eslint/eslint-plugin": "^5.30.7",
-    "@typescript-eslint/parser": "^5.30.7",
-    "eslint": "^7.15.0",
-    "eslint-config-prettier": "^7.0.0",
-    "eslint-plugin-prettier": "^3.3.0",
-    "prettier": "^2.2.1",
-    "rimraf": "^5.0.0",
+    "@types/bent": "^7.3.8",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
     "slash-up": "^1.4.2",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.4"
+    "typescript": "^5.3.2"
   }
 }
