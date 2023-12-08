@@ -103,8 +103,7 @@ export default class CodeCommand extends SlashCommand {
       case 'entity': {
         const { query, around = 3, offset = 0 } = options;
 
-        if (!(query in TypeNavigator.typeMap.all))
-          return _(`Entity \`${query}\` was not found in type map.`);
+        if (!(query in TypeNavigator.typeMap.all)) return _(`Entity \`${query}\` was not found in type map.`);
 
         const { meta } = TypeNavigator.findFirstMatch(query);
 
@@ -118,8 +117,7 @@ export default class CodeCommand extends SlashCommand {
       case 'lines': {
         let { query, start, end } = options;
 
-        if (!TypeNavigator.knownFiles.includes(query))
-          return _(`Could not find ${query} in known files.`)
+        if (!TypeNavigator.knownFiles.includes(query)) return _(`Could not find ${query} in known files.`);
 
         if (end < start) [start, end] = [end, start]; // swap if inverted
 

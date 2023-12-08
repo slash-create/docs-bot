@@ -171,10 +171,14 @@ export default class TemporalCommand extends SlashCommand {
   #ordinal = (n: number) => {
     if (n > 3 && n < 21) return n + 'th';
     switch (n % 10) {
-      case 1: return n + 'st';
-      case 2: return n + 'nd';
-      case 3: return n + 'rd';
-      default: return n + 'th';
+      case 1:
+        return n + 'st';
+      case 2:
+        return n + 'nd';
+      case 3:
+        return n + 'rd';
+      default:
+        return n + 'th';
     }
   };
 
@@ -237,8 +241,9 @@ export default class TemporalCommand extends SlashCommand {
     const starSign = resolveStarSign(invokedAt);
     const { since, until } = starSign.range;
 
-    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0)
-      .setUTCFullYear(invokedTime.getFullYear() + +(since.month > until.month));
+    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0).setUTCFullYear(
+      invokedTime.getFullYear() + +(since.month > until.month)
+    );
 
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
     const starSignIndent = `> ${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`;
@@ -274,7 +279,7 @@ export default class TemporalCommand extends SlashCommand {
     if (endYear - startYear <= 0)
       return `Your selected range (\`${endYear} - ${startYear} <= 0\`) is inverted, please swap the arguments.`;
 
-    if ((date > 28 && month === 1) || [3, 5, 9, 11].includes(month) && date === 31)
+    if ((date > 28 && month === 1) || ([3, 5, 9, 11].includes(month) && date === 31))
       // 28th-31st Feb
       return `\`${date}/${months[month]}\` is not possible, please try again.`;
 
@@ -352,6 +357,7 @@ export default class TemporalCommand extends SlashCommand {
     const { year, month, day, hour, minute, second } = options;
 
     const exact = new Date(year, month, day, hour, minute, second);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
     return trimContent`

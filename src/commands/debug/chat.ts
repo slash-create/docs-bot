@@ -84,9 +84,9 @@ export default class ChatDebugCommand extends SlashCommand {
     return !inGuild
       ? resolved.users[target]
       : {
-        ...resolved.members[target],
-        user: resolved.users[target]
-      };
+          ...resolved.members[target],
+          user: resolved.users[target]
+        };
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions> {
@@ -143,10 +143,12 @@ export default class ChatDebugCommand extends SlashCommand {
       return {
         content: header,
         ephemeral: true,
-        files: [{
-          name: `payload_${type}_${target.split('/').slice(-1)}.json`,
-          file: Buffer.from(stringPayload)
-        }]
+        files: [
+          {
+            name: `payload_${type}_${target.split('/').slice(-1)}.json`,
+            file: Buffer.from(stringPayload)
+          }
+        ]
       };
     }
 

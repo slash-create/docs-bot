@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
-import { SlashCreator, FastifyServer, ApplicationCommandType, Command, CommandOptionType, CommandSubcommandOption, AnyCommandOption, ApplicationCommandOption } from 'slash-create';
+import { SlashCreator, FastifyServer, CommandOptionType, ApplicationCommandOption } from 'slash-create';
 import path from 'path';
 
-import { displayUser, hashMapToString, titleCase } from './util/common';
+import { hashMapToString, titleCase } from './util/common';
 import registerComponents from './components';
 
 let dotenvPath = path.join(process.cwd(), '.env');
@@ -33,7 +33,7 @@ creator.on('commandRun', (command, _, ctx) => {
 });
 
 creator.on('commandRegister', (command) => {
-  const [typeString, typeSymbol] = commandTypeStrings[command.type]
+  const [typeString, typeSymbol] = commandTypeStrings[command.type];
 
   logger.info(`Registered command /${command.commandName} (${typeString} [${typeSymbol}])`);
 
@@ -47,15 +47,15 @@ creator.on('commandRegister', (command) => {
           commandPaths[commandPath.concat(subCommand.name).join(' ')] = {};
           break;
         }
-        for (const childOption of subCommand.options)
-          searchOptions(childOption, commandPath.concat(subCommand.name));
+        for (const childOption of subCommand.options) searchOptions(childOption, commandPath.concat(subCommand.name));
         break;
       }
 
       default: {
-        const pathTarget = subCommand.name
-          + (!subCommand.required ? '?' : '')
-          + ('autocomplete' in subCommand && subCommand.autocomplete ? '*' : '');
+        const pathTarget =
+          subCommand.name +
+          (!subCommand.required ? '?' : '') +
+          ('autocomplete' in subCommand && subCommand.autocomplete ? '*' : '');
 
         commandPaths[commandPath.join(' ')] ??= {};
         commandPaths[commandPath.join(' ')][pathTarget] = titleCase(CommandOptionType[subCommand.type].toLowerCase());
@@ -65,12 +65,12 @@ creator.on('commandRegister', (command) => {
     }
   }
 
-  if (command.options)
-    for (const option of command.options)
-      searchOptions(option);
+  if (command.options) for (const option of command.options) searchOptions(option);
 
   for (const key in commandPaths)
-    logger.info(`Found command path ${`/${command.commandName} ${key}`.trim()} { ${hashMapToString(commandPaths[key])} }`);
+    logger.info(
+      `Found command path ${`/${command.commandName} ${key}`.trim()} { ${hashMapToString(commandPaths[key])} }`
+    );
 });
 
 creator.on('commandError', (command, error) => logger.error(`Command ${command.commandName}:`, error));
@@ -81,7 +81,7 @@ creator.on('componentInteraction', (ctx) => {
 
 registerComponents(creator);
 
-creator.registerCommandsIn(path.join(__dirname, 'commands'))
+creator.registerCommandsIn(path.join(__dirname, 'commands'));
 creator
   .withServer(new FastifyServer())
   .collectCommandIDs()
