@@ -14,8 +14,9 @@ import { casual as chrono } from 'chrono-node';
 
 import { time } from '../util/markup';
 import { TimeStyle } from '../util/types';
-import { plural, ephemeralResponse as _ } from '../util/common';
+import { plural, trimContent } from '../util/common';
 import { timeOptionFactory as timeOption } from '../util/commandOptions';
+import { resolveStarSign } from '../util/StarSign';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -38,7 +39,7 @@ export default class TemporalCommand extends SlashCommand {
               name: 'weekday',
               type: CommandOptionType.INTEGER,
               description: 'The day of the week to focus on.',
-              choices: days.map((month, index) => ({ name: month, value: index })),
+              choices: days.map((day, index) => ({ name: day, value: index })),
               required: true
             },
             {
@@ -170,12 +171,18 @@ export default class TemporalCommand extends SlashCommand {
   #ordinal = (n: number) => {
     if (n > 3 && n < 21) return n + 'th';
     switch (n % 10) {
-      case 1: return n + 'st';
-      case 2: return n + 'nd';
-      case 3: return n + 'rd';
-      default: return n + 'th';
+      case 1:
+        return n + 'st';
+      case 2:
+        return n + 'nd';
+      case 3:
+        return n + 'rd';
+      default:
+        return n + 'th';
     }
   };
+
+  #ordinalDate = (month: number, day: number) => `${months[month]} ${this.#ordinal(day)}`;
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
     const { locale, focused, options } = ctx;
@@ -198,23 +205,32 @@ export default class TemporalCommand extends SlashCommand {
     const [subCommand] = ctx.subcommands;
     const options = ctx.options[subCommand];
 
+    let content: string;
+
     switch (subCommand) {
       case 'now':
-        return this.#runTemporalNow(ctx);
+        content = this.#runTemporalNow(ctx);
+        break;
 
       case 'occurrences':
-        return this.#runTemporalOccurrences(ctx, options);
+        content = this.#runTemporalOccurrences(ctx, options);
+        break;
 
       case 'parse':
-        return this.#runTemporalParse(ctx, options);
+        content = this.#runTemporalParse(ctx, options);
+        break;
 
       case 'exact':
-        return this.#runTemporalExact(ctx, options);
+        content = this.#runTemporalExact(ctx, options);
+        break;
     }
+
+    return { content, ephemeral: true };
   }
 
-  async #runTemporalNow(ctx: CommandContext): Promise<MessageOptions> {
+  #runTemporalNow(ctx: CommandContext): string {
     const { invokedAt } = ctx;
+    const invokedTime = new Date(invokedAt);
 
     const [longTime, shortDate, relativeTime] = [
       TimeStyle.LONG_TIME,
@@ -222,7 +238,22 @@ export default class TemporalCommand extends SlashCommand {
       TimeStyle.RELATIVE_TIME
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
-    return _(`This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`);
+    const starSign = resolveStarSign(invokedAt);
+    const { since, until } = starSign.range;
+
+    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0).setUTCFullYear(
+      invokedTime.getFullYear() + +(since.month > until.month)
+    );
+
+    const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
+    const starSignIndent = `> ${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`;
+    const starSignRange = [
+      `from **${this.#ordinalDate(since.month, since.day)}**`,
+      `to **${this.#ordinalDate(until.month, until.day)}**`,
+      this.#showAndTell(time(relativeOffset, TimeStyle.RELATIVE_TIME))
+    ].join(' ');
+
+    return `${invokedTimeString}\n${starSignIndent} ${starSignRange}`;
   }
 
   /**
@@ -234,7 +265,7 @@ export default class TemporalCommand extends SlashCommand {
    * - select?:{=first,last,random}
    * - count?:{=5,20}
    */
-  async #runTemporalOccurrences(ctx: CommandContext, options: TemporalOccuranceOptions): Promise<MessageOptions> {
+  #runTemporalOccurrences(ctx: CommandContext, options: TemporalOccuranceOptions): string {
     const {
       date,
       month,
@@ -246,11 +277,11 @@ export default class TemporalCommand extends SlashCommand {
     }: TemporalOccuranceOptions = options;
 
     if (endYear - startYear <= 0)
-      return _(`Your selected range (\`${endYear} - ${startYear} <= 0\`) is inverted, please swap the arguments.`);
+      return `Your selected range (\`${endYear} - ${startYear} <= 0\`) is inverted, please swap the arguments.`;
 
-    if (date > 28 && month === 1)
+    if ((date > 28 && month === 1) || ([3, 5, 9, 11].includes(month) && date === 31))
       // 28th-31st Feb
-      return _(`\`${date}/${months[month]}\` is not possible, please try again.`);
+      return `\`${date}/${months[month]}\` is not possible, please try again.`;
 
     const fDate = new Date(0, month, date, 0, 0, 0);
     const occurances: number[] = [];
@@ -290,19 +321,18 @@ export default class TemporalCommand extends SlashCommand {
     /* eslint-disable prettier/prettier */
     const prefix = select === 'random' ? 'A selection from' : `The ${select}`;
     const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(date)}`;
-    const ordinalQuery = `**${occurances.length} ${plural(occurances.length, 'occurance')}** of ${dateString}`;
-    const yearRange = `${startYear} and ${endYear}`;
+    const ordinalQuery = `**${occurances.length} ${plural(occurances.length, 'occurance')}** of *${dateString}*`;
+    const yearRange = `**\`${startYear}\`** and **\`${endYear}\`**`;
 
-    const header = `${prefix} ${ordinalQuery} between ${yearRange} were found in ${attempts} ${plural(attempts, 'attempt')}.`;
-
-    return _([
-      header,
-      ...occurances.map((date) => '- ' + this.#showAndTell(time(date, TimeStyle.LONG_DATE)))
-    ].join('\n'));
+    return [
+      `${prefix} ${ordinalQuery} between ${yearRange} were found in ${attempts} ${plural(attempts, 'attempt')}.`,
+      '> Copy the command string next to your username to share with others.',
+      ...occurances.map((date) => '- ' + this.#showAndTell(time(date, TimeStyle.LONG_DATE))).join('\n'),
+    ].join('\n');
     /* eslint-enable prettier/prettier */
   }
 
-  async #runTemporalParse(ctx: CommandContext, options: TemporalParseOptions): Promise<MessageOptions> {
+  #runTemporalParse(ctx: CommandContext, options: TemporalParseOptions): string {
     const { query, instant /* Date.now() */, select = 'first', count = 3, forward_date: forwardDate = false } = options;
 
     const shortTime = this.#stylePredicate(TimeStyle.SHORT_FORMAT);
@@ -315,30 +345,25 @@ export default class TemporalCommand extends SlashCommand {
       );
 
     if (select === 'last') results.reverse();
-
     if (results.length > count) results.splice(count, results.length);
 
-    const suffix = instant ? ` (Relative to ${shortTime(instant)})` : '';
-
-    return _(
-      [
-        `The ${select} **${results.length} ${plural(results.length, 'result')}** from your query.` + suffix,
-        ...results.map((value, index) => `${index + 1}. ${value}`)
-      ].join('\n')
-    );
+    return trimContent`
+      The ${select} **${results.length} ${plural(results.length, 'result')}** from your query.
+      ${instant ? ` (Relative to ${shortTime(instant)})` : ''}
+      ${results.map((value, index) => `${index + 1}. ${value}`).join('\n')}`;
   }
 
-  async #runTemporalExact(ctx: CommandContext, options: TemporalExactOptions): Promise<MessageOptions> {
+  #runTemporalExact(ctx: CommandContext, options: TemporalExactOptions): string {
     const { year, month, day, hour, minute, second } = options;
 
     const exact = new Date(year, month, day, hour, minute, second);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
-    return _(
-      `The provided arguments construct the timestamp of ${this.#showAndTell(
-        time(exact, TimeStyle.LONG_FORMAT)
-      )} ${time(exact, TimeStyle.RELATIVE_TIME)}`
-    );
+    return trimContent`
+      The provided arguments construct the timestamp of
+      ${this.#showAndTell(time(exact, TimeStyle.LONG_FORMAT))}
+      ${time(exact, TimeStyle.RELATIVE_TIME)}`;
   }
 }
 
