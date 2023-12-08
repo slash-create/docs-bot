@@ -39,7 +39,7 @@ export default class TemporalCommand extends SlashCommand {
               name: 'weekday',
               type: CommandOptionType.INTEGER,
               description: 'The day of the week to focus on.',
-              choices: days.map((month, index) => ({ name: month, value: index })),
+              choices: days.map((day, index) => ({ name: day, value: index })),
               required: true
             },
             {
