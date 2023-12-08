@@ -1,9 +1,7 @@
-import bent from 'bent';
 import { filter } from 'fuzzy';
 
 import { AnyStructureDescriptor, DocumentationRoot } from './metaTypes';
 
-const getJSON = bent('json');
 const exclusionRegex = /(?:^_|\[|\])/;
 const targetURI = 'https://raw.githubusercontent.com/Snazzah/slash-create/docs/latest.json';
 
@@ -106,8 +104,8 @@ export default class TypeNavigator {
   }
 
   static {
-    getJSON(targetURI).then((doc: DocumentationRoot) => {
-      this.data = doc;
+    fetch(targetURI).then(async (res) => {
+      this.data = (await res.json()) as DocumentationRoot;
       this.generateTypeMap();
     });
   }

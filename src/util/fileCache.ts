@@ -1,4 +1,3 @@
-import bent from 'bent';
 import { Collection } from 'slash-create';
 import { ONE_HOUR } from './constants';
 
@@ -10,8 +9,6 @@ export interface CacheInfo {
   fetchedAt: number;
   ref: string;
 }
-
-const getText = bent('string');
 
 export class FileCache {
   private cache: Collection<string, CacheInfo> = new Collection();
@@ -58,7 +55,7 @@ export class FileCache {
     }
 
     const url = FileCache.buildRawURL(ref, path);
-    const body: string = await getText(url);
+    const body: string = await fetch(url).then((res) => res.text());
 
     if (!body) throw 'Not Found';
 
