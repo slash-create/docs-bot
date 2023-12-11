@@ -2,7 +2,8 @@ import {
   CommandOptionType,
   ApplicationCommandOptionAutocompletable,
   ApplicationCommandOptionLimitedNumber,
-  ApplicationCommandOption
+  ApplicationCommandOption,
+  ApplicationCommandOptionSubCommand
 } from 'slash-create';
 
 export const shareOption: ApplicationCommandOption = {
