@@ -252,11 +252,15 @@ export default class TemporalCommand extends SlashCommand {
     const starSign = resolveStarSign(instant);
     const { since, until } = starSign.range;
 
+    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0).setUTCFullYear(
+      new Date(instant).getFullYear() + +(since.month > until.month)
+    );
+
     return [
       `${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
       `from **${this.#ordinalDate(since.month, since.day)}**`,
       `to **${this.#ordinalDate(until.month, until.day)}**`,
-      this.#showAndTell(time(instant, TimeStyle.RELATIVE_TIME))
+      this.#showAndTell(time(relativeOffset, TimeStyle.RELATIVE_TIME))
     ].join(' ');
   }
 
@@ -309,7 +313,6 @@ export default class TemporalCommand extends SlashCommand {
 
   #runTemporalNow(ctx: CommandContext): string {
     const { invokedAt } = ctx;
-    const invokedTime = new Date(invokedAt);
 
     const [longTime, shortDate, relativeTime] = [
       TimeStyle.LONG_TIME,
@@ -317,22 +320,10 @@ export default class TemporalCommand extends SlashCommand {
       TimeStyle.RELATIVE_TIME
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
-    const starSign = resolveStarSign(invokedAt);
-    const { since, until } = starSign.range;
-
-    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0).setUTCFullYear(
-      invokedTime.getFullYear() + +(since.month > until.month)
-    );
-
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
-    const starSignIndent = `> ${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`;
-    const starSignRange = [
-      `from **${this.#ordinalDate(since.month, since.day)}**`,
-      `to **${this.#ordinalDate(until.month, until.day)}**`,
-      this.#showAndTell(time(relativeOffset, TimeStyle.RELATIVE_TIME))
-    ].join(' ');
+    const starSignString = this.#starSignStringFor(invokedAt);
 
-    return `${invokedTimeString}\n${starSignIndent} ${starSignRange}`;
+    return `${invokedTimeString}\n${starSignString}`;
   }
 
   /**
@@ -442,10 +433,11 @@ export default class TemporalCommand extends SlashCommand {
     return trimContent`
       The provided arguments construct the timestamp of
       ${this.#showAndTell(time(exact, TimeStyle.LONG_FORMAT))}
-      ${time(exact, TimeStyle.RELATIVE_TIME)}`;
+      ${time(exact, TimeStyle.RELATIVE_TIME)}
+      > ${this.#starSignStringFor(exact)}`;
   }
 
-  #runTemporalSnowflake(ctx: CommandContext, subCommand: string, options: { target?: string; }) {
+  #runTemporalSnowflake(ctx: CommandContext, subCommand: string, options: { target?: string }) {
     const { target } = options;
 
     let snowflake: string;
@@ -485,7 +477,6 @@ export default class TemporalCommand extends SlashCommand {
       TimeStyle.RELATIVE_TIME
     ].map((style) => this.#showAndTell(time(snowDate, style)));
 
-    //
     const invokedTimeString = `This \`${subCommand}\` instant would occur ${relativeTime} at ${longTime} on ${shortDate}.`;
     const snowSignString = this.#starSignStringFor(snowDate);
 
