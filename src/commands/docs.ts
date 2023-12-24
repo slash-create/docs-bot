@@ -333,7 +333,7 @@ export default class DocumentationCommand extends SlashCommand {
     type
       .flat(2)
       .map((fragment) => {
-        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typdef', fragment)})`;
+        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typedef', fragment)})`;
         else if (fragment in standardObjects) return `[${fragment}](${BASE_MDN_URL}/${standardObjects[fragment]})`;
         return fragment;
       })
