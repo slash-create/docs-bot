@@ -163,9 +163,11 @@ export default class DocumentationCommand extends SlashCommand {
         }
 
         embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
-        embed.title = `${descriptor.name}${
-          'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''
-        }`;
+        embed.title = descriptor.name;
+
+        if ('extends' in descriptor) {
+          embed.title += ` *extends \`${descriptor.extends.join('')}\`*`;
+        }
 
         this.addCommonFields(embed, descriptor);
 
