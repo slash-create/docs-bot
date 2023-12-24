@@ -14,10 +14,11 @@ import {
 } from 'slash-create';
 
 import { component as deleteComponent } from '../components/delete-repsonse';
+import { docsOptionFactory, shareOption } from '../util/commandOptions';
 import { ephemeralResponse as _, displayUser, titleCase } from '../util/common';
 import { SC_RED, standardObjects } from '../util/constants';
-import { shareOption, docsOptionFactory } from '../util/commandOptions';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
+import { command } from '../util/markup';
 import {
   AnyParentDescriptor,
   AnyStructureDescriptor,
@@ -29,7 +30,6 @@ import {
   TypeSymbol
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
-import { command } from '../util/markup';
 
 export default class DocumentationCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
