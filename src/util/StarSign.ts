@@ -39,10 +39,26 @@ class StarSign implements IStarSign {
     return StarSign.#instances[(this.#index === 0 ? StarSign.#total : this.#index) - 1];
   }
 
+  public get instant() {
+    return new Date(new Date().getFullYear(), this.month, this.day, 0, 0, 0, 0);
+  }
+
+  public isPrevMonth(instant: Date | number): boolean {
+    return new Date(instant).getMonth() === this.range.since.month;
+  }
+
+  public isNextMonth(instant: Date | number): boolean {
+    return new Date(instant).getMonth() === this.range.until.month;
+  }
+
+  public offsetOf(instant: Date | number): number {
+    return this.instant.valueOf() - instant.valueOf();
+  }
+
   public get range() {
     return {
-      since: { month: this.prev.month, day: this.prev.day + 1 },
-      until: { month: this.month, day: this.day }
+      since: { month: this.prev.month, day: this.prev.day + 1, instant: this.prev.instant },
+      until: { month: this.month, day: this.day, instant: this.instant }
     };
   }
 

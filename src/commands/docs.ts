@@ -14,10 +14,11 @@ import {
 } from 'slash-create';
 
 import { component as deleteComponent } from '../components/delete-repsonse';
+import { docsOptionFactory, shareOption } from '../util/commandOptions';
 import { ephemeralResponse as _, displayUser, titleCase } from '../util/common';
 import { SC_RED, standardObjects } from '../util/constants';
-import { shareOption, docsOptionFactory } from '../util/commandOptions';
 import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
+import { command } from '../util/markup';
 import {
   AnyParentDescriptor,
   AnyStructureDescriptor,
@@ -29,7 +30,6 @@ import {
   TypeSymbol
 } from '../util/metaTypes';
 import TypeNavigator from '../util/typeNavigator';
-import { command } from '../util/markup';
 
 export default class DocumentationCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -163,9 +163,11 @@ export default class DocumentationCommand extends SlashCommand {
         }
 
         embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
-        embed.title = `${descriptor.name}${
-          'extends' in descriptor ? ` *extends \`${descriptor.extends.join('')}\`*` : ''
-        }`;
+        embed.title = descriptor.name;
+
+        if ('extends' in descriptor) {
+          embed.title += ` *extends \`${descriptor.extends.join('')}\`*`;
+        }
 
         this.addCommonFields(embed, descriptor);
 
@@ -331,7 +333,7 @@ export default class DocumentationCommand extends SlashCommand {
     type
       .flat(2)
       .map((fragment) => {
-        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typdef', fragment)})`;
+        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typedef', fragment)})`;
         else if (fragment in standardObjects) return `[${fragment}](${BASE_MDN_URL}/${standardObjects[fragment]})`;
         return fragment;
       })

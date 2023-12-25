@@ -12,11 +12,11 @@ import {
 
 import { casual as chrono } from 'chrono-node';
 
+import { resolveStarSign } from '../util/StarSign';
+import { timeOptionFactory as timeOption } from '../util/commandOptions';
+import { plural } from '../util/common';
 import { time } from '../util/markup';
 import { TimeStyle } from '../util/types';
-import { plural, trimContent } from '../util/common';
-import { timeOptionFactory as timeOption } from '../util/commandOptions';
-import { resolveStarSign } from '../util/StarSign';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -248,19 +248,25 @@ export default class TemporalCommand extends SlashCommand {
 
   #ordinalDate = (month: number, day: number) => `${months[month]} ${this.#ordinal(day)}`;
 
-  #starSignStringFor(instant: number | Date): string {
+  #starSignStringFor(instant: Date): string {
     const starSign = resolveStarSign(instant);
     const { since, until } = starSign.range;
 
-    const relativeOffset = new Date(0, until.month, until.day, 0, 0, 0, 0).setUTCFullYear(
-      new Date(instant).getFullYear() + +(since.month > until.month)
+    const isEndOfSequence = since.month > until.month || starSign.prev.month > since.month;
+
+    const pastOffset = starSign.instant.setFullYear(
+      instant.getFullYear() - +(isEndOfSequence && starSign.isNextMonth(instant))
+    );
+    const futureOffset = starSign.next.instant.setFullYear(
+      instant.getFullYear() + +(isEndOfSequence && starSign.isPrevMonth(instant))
     );
 
     return [
       `${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
       `from **${this.#ordinalDate(since.month, since.day)}**`,
+      this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME)),
       `to **${this.#ordinalDate(until.month, until.day)}**`,
-      this.#showAndTell(time(relativeOffset, TimeStyle.RELATIVE_TIME))
+      this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))
     ].join(' ');
   }
 
@@ -313,6 +319,7 @@ export default class TemporalCommand extends SlashCommand {
 
   #runTemporalNow(ctx: CommandContext): string {
     const { invokedAt } = ctx;
+    const invokedTime = new Date(invokedAt);
 
     const [longTime, shortDate, relativeTime] = [
       TimeStyle.LONG_TIME,
@@ -321,7 +328,7 @@ export default class TemporalCommand extends SlashCommand {
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
-    const starSignString = this.#starSignStringFor(invokedAt);
+    const starSignString = this.#starSignStringFor(invokedTime);
 
     return `${invokedTimeString}\n${starSignString}`;
   }
@@ -391,11 +398,11 @@ export default class TemporalCommand extends SlashCommand {
     /* eslint-disable prettier/prettier */
     const prefix = select === 'random' ? 'A selection from' : `The ${select}`;
     const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(date)}`;
-    const ordinalQuery = `**${occurances.length} ${plural(occurances.length, 'occurance')}** of *${dateString}*`;
+    const ordinalQuery = `**${plural(occurances.length, 'occurance')}** of *${dateString}*`;
     const yearRange = `**\`${startYear}\`** and **\`${endYear}\`**`;
 
     return [
-      `${prefix} ${ordinalQuery} between ${yearRange} were found in ${attempts} ${plural(attempts, 'attempt')}.`,
+      `${prefix} ${ordinalQuery} between ${yearRange} were found in ${plural(attempts, 'attempt')}.`,
       '> Copy the command string next to your username to share with others.',
       ...occurances.map((date) => '- ' + this.#showAndTell(time(date, TimeStyle.LONG_DATE))).join('\n'),
     ].join('\n');
@@ -417,10 +424,11 @@ export default class TemporalCommand extends SlashCommand {
     if (select === 'last') results.reverse();
     if (results.length > count) results.splice(count, results.length);
 
-    return trimContent`
-      The ${select} **${results.length} ${plural(results.length, 'result')}** from your query.
-      ${instant ? ` (Relative to ${shortTime(instant)})` : ''}
-      ${results.map((value, index) => `${index + 1}. ${value}`).join('\n')}`;
+    return [
+      `The ${select} **${plural(results.length, 'result')}** from your query.` +
+        (instant ? ` (Relative to ${shortTime(instant)})` : ''),
+      ...results.map((value, index) => `${index + 1}. ${value}`)
+    ].join('\n');
   }
 
   #runTemporalExact(ctx: CommandContext, options: TemporalExactOptions): string {
@@ -430,23 +438,26 @@ export default class TemporalCommand extends SlashCommand {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
-    return trimContent`
-      The provided arguments construct the timestamp of
-      ${this.#showAndTell(time(exact, TimeStyle.LONG_FORMAT))}
-      ${time(exact, TimeStyle.RELATIVE_TIME)}
-      > ${this.#starSignStringFor(exact)}`;
+    const starSignString = this.#starSignStringFor(exact);
+
+    return [
+      `The provided arguments construct the timestamp of ${this.#showAndTell(
+        time(exact, TimeStyle.LONG_FORMAT)
+      )} ${time(exact, TimeStyle.RELATIVE_TIME)}`,
+      starSignString
+    ].join('\n');
   }
 
   #runTemporalSnowflake(ctx: CommandContext, subCommand: string, options: { target?: string }) {
     const { target } = options;
 
-    let snowflake: string;
+    let snowflake = '';
 
     switch (subCommand) {
-      case 'user': // ctx.user.id
+      case 'user': // ctx.users.get(target).id
         snowflake = target ?? ctx.user.id;
         break;
-      case 'channel': // ctx.channel.id
+      case 'channel': // ctx.channels.get(target).id
         snowflake = target ?? ctx.channel.id;
         break;
       case 'role': // ctx.roles.get(target).id;
@@ -482,7 +493,7 @@ export default class TemporalCommand extends SlashCommand {
 
     return [
       `${invokedTimeString}\n> ${snowSignString}`,
-      `\`{worker: ${workerID}, process: ${processID}, increment: ${increment}}\``
+      `\`{timestamp: ${snowStamp}, worker: ${workerID}, process: ${processID}, increment: ${increment}}\``
     ].join('\n');
   }
 }

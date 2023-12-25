@@ -9,8 +9,8 @@ import {
 
 import { queryOption } from '../util/commandOptions';
 import { ephemeralResponse as _, trimContent } from '../util/common';
-import TypeNavigator from '../util/typeNavigator';
 import { command } from '../util/markup';
+import TypeNavigator from '../util/typeNavigator';
 
 export default class SearchCommand extends SlashCommand {
   private _docsCommand: SlashCommand;
