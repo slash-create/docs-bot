@@ -61,9 +61,9 @@ $ npx slash-up list
         end_year integer - The year to end the search at.
         select? string - Selection type. (default = "first")
         count? integer - Selection count. (default = 5)
-    parse - Parse string query with chrono-node parse. (GitHub: https://github.com/wanasit/chrono)
+    parse - Parse string query with chrono-node parse from UTC time.(GitHub: https://github.com/wanasit/chrono)
         query string - The query to parse (context around date strings are not provided in response).
-        instant? integer - A time instant. If it is for the timestamp markup, add three zeros to the end. (default = {now})
+        instant?* integer - A time instant. If it is for the timestamp markup, add three zeros to the end. (default = {now})
         forward_date? boolean - Should the parser only return results forward of the temporal instant. (default = false)
         select? string - Selection type. (default = "first")
         count? integer - Selection count. (default = 3)
@@ -74,12 +74,23 @@ $ npx slash-up list
         hour integer - The hour of the timestamp.
         minute integer - The minute of the timestamp.
         second integer - The second of the timestamp.
+    snowflake - Deconstruct a Discord snowflake.
+        user - Target a user snowflake.
+            target? user - The user to target. (default = @me)
+        channel - Target a channel snowflake.
+            target? channel - The channel to target. (default = #here)
+        role - Target a role snowflake.
+            target role - The role to target.
+        guild - Target the guild snowflake.
+        input - Target the provided input as a snowflake.
+            target string - The input to target.
+
 
 /debug - Debug provided entities for interaction contexts.
     user - Print the payload for yourself or the target user.
         target? user - The user to target for debug. (default = @me)
     channel - Print the payload for the target channel.
-        target? channel - The channel to target for debug.
+        target? channel - The channel to target for debug. (default = #here)
     role - Print the payload for the target role.
         target role - The role to target for debug.
 
