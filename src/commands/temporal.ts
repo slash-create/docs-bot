@@ -159,6 +159,70 @@ export default class TemporalCommand extends SlashCommand {
             timeOption('minute', { min: 0, max: 60 }),
             timeOption('second', { min: 0, max: 60 })
           ]
+        },
+        {
+          name: 'snowflake',
+          description: 'Deconstruct a Discord snowflake.',
+          type: CommandOptionType.SUB_COMMAND_GROUP,
+          options: [
+            {
+              name: 'user',
+              description: 'Target a user snowflake.',
+              type: CommandOptionType.SUB_COMMAND,
+              options: [
+                {
+                  name: 'target',
+                  description: 'The user to target. (default = @me)',
+                  type: CommandOptionType.USER,
+                  required: false
+                }
+              ]
+            },
+            {
+              name: 'channel',
+              description: 'Target a channel snowflake.',
+              type: CommandOptionType.SUB_COMMAND,
+              options: [
+                {
+                  name: 'target',
+                  description: 'The channel to target. (default = #here)',
+                  type: CommandOptionType.CHANNEL,
+                  required: false
+                }
+              ]
+            },
+            {
+              name: 'role',
+              description: 'Target a role snowflake.',
+              type: CommandOptionType.SUB_COMMAND,
+              options: [
+                {
+                  name: 'target',
+                  description: 'The role to target.',
+                  type: CommandOptionType.ROLE,
+                  required: true
+                }
+              ]
+            },
+            {
+              name: 'guild',
+              description: 'Target the guild snowflake.',
+              type: CommandOptionType.SUB_COMMAND
+            },
+            {
+              name: 'input',
+              description: 'Target the provided input as a snowflake.',
+              type: CommandOptionType.SUB_COMMAND,
+              options: [
+                {
+                  name: 'target',
+                  description: 'The input to target.',
+                  type: CommandOptionType.STRING,
+                  autocomplete: false
+                }
+              ]
+            }
+          ]
         }
       ]
     });
@@ -184,6 +248,28 @@ export default class TemporalCommand extends SlashCommand {
 
   #ordinalDate = (month: number, day: number) => `${months[month]} ${this.#ordinal(day)}`;
 
+  #starSignStringFor(instant: Date): string {
+    const starSign = resolveStarSign(instant);
+    const { since, until } = starSign.range;
+
+    const isEndOfSequence = since.month > until.month || starSign.prev.month > since.month;
+
+    const pastOffset = starSign.instant.setFullYear(
+      instant.getFullYear() - +(isEndOfSequence && starSign.isNextMonth(instant))
+    );
+    const futureOffset = starSign.next.instant.setFullYear(
+      instant.getFullYear() + +(isEndOfSequence && starSign.isPrevMonth(instant))
+    );
+
+    return [
+      `${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
+      `from **${this.#ordinalDate(since.month, since.day)}**`,
+      this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME)),
+      `to **${this.#ordinalDate(until.month, until.day)}**`,
+      this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))
+    ].join(' ');
+  }
+
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
     const { locale, focused, options } = ctx;
     const intlDate = new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'full', timeZone: 'UTC' });
@@ -202,12 +288,12 @@ export default class TemporalCommand extends SlashCommand {
   }
 
   async run(ctx: CommandContext): Promise<MessageOptions> {
-    const [subCommand] = ctx.subcommands;
-    const options = ctx.options[subCommand];
+    const [parentCommand, childCommand] = ctx.subcommands;
+    const options = ctx.options[parentCommand];
 
     let content: string;
 
-    switch (subCommand) {
+    switch (parentCommand) {
       case 'now':
         content = this.#runTemporalNow(ctx);
         break;
@@ -223,6 +309,9 @@ export default class TemporalCommand extends SlashCommand {
       case 'exact':
         content = this.#runTemporalExact(ctx, options);
         break;
+
+      case 'snowflake':
+        content = this.#runTemporalSnowflake(ctx, childCommand, options[childCommand]);
     }
 
     return { content, ephemeral: true };
@@ -238,26 +327,8 @@ export default class TemporalCommand extends SlashCommand {
       TimeStyle.RELATIVE_TIME
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
-    const starSign = resolveStarSign(invokedAt);
-    const { since, until } = starSign.range;
-
-    const isEndOfSequence = since.month > until.month || starSign.prev.month > since.month;
-
-    const pastOffset = since.instant.setUTCFullYear(
-      invokedTime.getFullYear() + -(isEndOfSequence && starSign.isNextMonth(invokedTime))
-    );
-    const futureOffset = until.instant.setUTCFullYear(
-      invokedTime.getFullYear() + +(isEndOfSequence && starSign.isPrevMonth(invokedTime))
-    );
-
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
-    const starSignString = [
-      `> ${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
-      `from **${this.#ordinalDate(since.month, since.day)}**`,
-      this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME)),
-      `to **${this.#ordinalDate(until.month, until.day)}**`,
-      this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))
-    ].join(' ');
+    const starSignString = this.#starSignStringFor(invokedTime);
 
     return `${invokedTimeString}\n${starSignString}`;
   }
@@ -364,33 +435,65 @@ export default class TemporalCommand extends SlashCommand {
     const { year, month, day, hour, minute, second } = options;
 
     const exact = new Date(year, month, day, hour, minute, second);
-    const starSign = resolveStarSign(exact);
-    const { since, until } = starSign.range;
-
-    const isEndOfSequence = since.month > until.month || starSign.prev.month > since.month;
-
-    const pastOffset = starSign.instant.setFullYear(
-      exact.getFullYear() - +(isEndOfSequence && starSign.isNextMonth(exact))
-    );
-    const futureOffset = starSign.next.instant.setFullYear(
-      exact.getFullYear() + +(isEndOfSequence && starSign.isPrevMonth(exact))
-    );
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
-    const starSignString = [
-      `> ${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
-      `from **${this.#ordinalDate(since.month, since.day)}**`,
-      this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME)),
-      `to **${this.#ordinalDate(until.month, until.day)}**`,
-      this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))
-    ].join(' ');
+    const starSignString = this.#starSignStringFor(exact);
 
     return [
       `The provided arguments construct the timestamp of ${this.#showAndTell(
         time(exact, TimeStyle.LONG_FORMAT)
       )} ${time(exact, TimeStyle.RELATIVE_TIME)}`,
       starSignString
+    ].join('\n');
+  }
+
+  #runTemporalSnowflake(ctx: CommandContext, subCommand: string, options: { target?: string }) {
+    const { target } = options;
+
+    let snowflake = '';
+
+    switch (subCommand) {
+      case 'user': // ctx.users.get(target).id
+        snowflake = target ?? ctx.user.id;
+        break;
+      case 'channel': // ctx.channels.get(target).id
+        snowflake = target ?? ctx.channel.id;
+        break;
+      case 'role': // ctx.roles.get(target).id;
+      case 'input':
+        snowflake = target;
+        break;
+      case 'guild':
+        snowflake = ctx.guildID;
+        break;
+    }
+
+    if (snowflake === '') {
+      return 'Unknown outcome, snowflake was not found.';
+    }
+
+    const id = BigInt(snowflake);
+
+    const snowStamp = (id >> 22n) + 1420070400000n;
+    const workerID = (id & 0x3e0000n) >> 17n;
+    const processID = (id & 0x1f000n) >> 12n;
+    const increment = id & 0xfffn;
+
+    const snowDate = new Date(Number(snowStamp));
+
+    const [longTime, shortDate, relativeTime] = [
+      TimeStyle.LONG_TIME,
+      TimeStyle.SHORT_DATE,
+      TimeStyle.RELATIVE_TIME
+    ].map((style) => this.#showAndTell(time(snowDate, style)));
+
+    const invokedTimeString = `This \`${subCommand}\` instant would occur ${relativeTime} at ${longTime} on ${shortDate}.`;
+    const snowSignString = this.#starSignStringFor(snowDate);
+
+    return [
+      `${invokedTimeString}\n> ${snowSignString}`,
+      `\`{timestamp: ${snowStamp}, worker: ${workerID}, process: ${processID}, increment: ${increment}}\``
     ].join('\n');
   }
 }
