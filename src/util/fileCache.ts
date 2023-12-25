@@ -1,6 +1,6 @@
 import { Collection } from 'slash-create';
-import { ONE_HOUR } from './constants';
 
+import { ONE_HOUR } from './constants';
 import { BRANCH, rawContentLink } from './linkBuilder';
 import { logger } from './logger';
 
