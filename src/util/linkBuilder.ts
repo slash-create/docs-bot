@@ -4,7 +4,7 @@ export const REMOTE_LOCATION = `Snazzah/slash-create`;
 export const BASE_MDN_URL = `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects`;
 
 export function buildDocsLink(calledType: string, entity: string, scrollTo?: string) {
-  return `${BASE_DOCS_URL}/${calledType}/${entity}${scrollTo ? `?scrollTo=${scrollTo}` : ''}`;
+  return `${BASE_DOCS_URL}/${calledType}/${entity}${scrollTo ? `?scrollTo=${scrollTo}` : ''}` as const;
 }
 
 export function buildGitHubLink(file: string, lineRange: [number, number?]) {
@@ -12,7 +12,7 @@ export function buildGitHubLink(file: string, lineRange: [number, number?]) {
     .filter(Boolean)
     .map((n) => `L${n}`)
     .join('-');
-  return `https://github.com/${REMOTE_LOCATION}/blob/${BRANCH}/${file}#${lineString}`;
+  return `https://github.com/${REMOTE_LOCATION}/blob/${BRANCH}/${file}#${lineString}` as const;
 }
 
 export const rawContentLink = `https://raw.githubusercontent.com/${REMOTE_LOCATION}`;

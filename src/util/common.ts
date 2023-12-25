@@ -7,7 +7,7 @@ export const hashMapToString = (input: object, connector: string = ' = ', sepera
     .map((key) => key + connector + input[key])
     .join(seperator);
 
-export const plural = (n: number, one: string, more: string = one + 's') => (n === 1 ? one : more);
+export const plural = (n: number, one: string, more: string = one + 's') => `${n} ${n === 1 ? one : more}`;
 
 export const ephemeralResponse = (content: MessageOptions | string): MessageOptions => {
   // eslint-disable-next-line prettier/prettier
