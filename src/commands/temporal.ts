@@ -218,6 +218,7 @@ export default class TemporalCommand extends SlashCommand {
                   name: 'target',
                   description: 'The input to target.',
                   type: CommandOptionType.STRING,
+                  required: true,
                   autocomplete: false
                 }
               ]
