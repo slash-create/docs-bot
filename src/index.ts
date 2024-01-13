@@ -28,7 +28,7 @@ creator.on('synced', () => logger.info('Commands synced!'));
 
 creator.on('commandRun', (command, _, ctx) => {
   const options = ctx.subcommands.reduce((target, command) => target[command], ctx.options);
-  const commandString = ['/' + command.commandName, ctx.subcommands.join(' '), hashMapToString(options)];
+  const commandString = ['/' + command.commandName, ctx.subcommands.join(' '), '{', hashMapToString(options), '}'];
   logger.info(`${logPrefix(ctx)} ran ${commandString.join(' ')}`);
 });
 
