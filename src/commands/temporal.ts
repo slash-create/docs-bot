@@ -249,7 +249,7 @@ export default class TemporalCommand extends SlashCommand {
 
   #ordinalDate = (month: number, day: number) => `${months[month]} ${this.#ordinal(day)}`;
 
-  #starSignStringFor(instant: Date): string {
+  #starSignStringFor(instant: Date, includeRelative: boolean = false): string {
     const starSign = resolveStarSign(instant);
     const { since, until } = starSign.range;
 
@@ -265,10 +265,13 @@ export default class TemporalCommand extends SlashCommand {
     return [
       `${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
       `from **${this.#ordinalDate(since.month, since.day)}**`,
-      this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME)),
+      ...(includeRelative && [this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME))]),
       `to **${this.#ordinalDate(until.month, until.day)}**`,
-      this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))
-    ].join(' ');
+      ...(includeRelative && [this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))])
+    ]
+      .filter(Boolean)
+      .map((line) => line.trim())
+      .join(' ');
   }
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
@@ -329,7 +332,7 @@ export default class TemporalCommand extends SlashCommand {
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
-    const starSignString = this.#starSignStringFor(invokedTime);
+    const starSignString = this.#starSignStringFor(invokedTime, true);
 
     return `${invokedTimeString}\n${starSignString}`;
   }
@@ -439,7 +442,7 @@ export default class TemporalCommand extends SlashCommand {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
-    const starSignString = this.#starSignStringFor(exact);
+    const starSignString = this.#starSignStringFor(exact, false);
 
     return [
       `The provided arguments construct the timestamp of ${this.#showAndTell(
