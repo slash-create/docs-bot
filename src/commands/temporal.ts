@@ -409,18 +409,14 @@ export default class TemporalCommand extends SlashCommand {
     /* eslint-disable prettier/prettier */
     const prefix = select === 'random' ? 'A selection from' : `The ${select}`;
     const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(date)}`;
-    const ordinalQuery = `**${plural(occurances.length, 'occurance')}** of *${dateString}*`;
+    const shortStarSign = this.#starSignStringFor(new Date(fDate.getFullYear(), month, date), StarSignConstruct.SHORT);
+    const ordinalQuery = `**${plural(occurances.length, 'occurance')}** of *${dateString}* (${shortStarSign})`;
     const yearRange = `**\`${startYear}\`** and **\`${endYear}\`**`;
 
     return [
       `${prefix} ${ordinalQuery} between ${yearRange} were found in ${plural(attempts, 'attempt')}.`,
       '> Copy the command string next to your username to share with others.',
-      occurances.map((date) => {
-        const dateFormat = this.#showAndTell(time(date, TimeStyle.LONG_DATE));
-        const starSign = this.#starSignStringFor(new Date(date), StarSignConstruct.SHORT);
-
-        return `- ${dateFormat} (${starSign})`
-      }),
+      occurances.map((date) => `- ${this.#showAndTell(time(date, TimeStyle.LONG_DATE))}`),
     ].flat().join('\n');
     /* eslint-enable prettier/prettier */
   }
