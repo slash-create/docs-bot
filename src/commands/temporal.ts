@@ -408,8 +408,13 @@ export default class TemporalCommand extends SlashCommand {
     return [
       `${prefix} ${ordinalQuery} between ${yearRange} were found in ${plural(attempts, 'attempt')}.`,
       '> Copy the command string next to your username to share with others.',
-      ...occurances.map((date) => '- ' + this.#showAndTell(time(date, TimeStyle.LONG_DATE))).join('\n'),
-    ].join('\n');
+      occurances.map((date) => {
+        const dateFormat = this.#showAndTell(time(date, TimeStyle.LONG_DATE));
+        const starSign = this.#starSignStringFor(new Date(date), StarSignConstruct.SHORT);
+
+        return `- ${dateFormat} (${starSign})`
+      }),
+    ].flat().join('\n');
     /* eslint-enable prettier/prettier */
   }
 
