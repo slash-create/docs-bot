@@ -410,7 +410,7 @@ export default class TemporalCommand extends SlashCommand {
     const prefix = select === 'random' ? 'A selection from' : `The ${select}`;
     const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(date)}`;
     const shortStarSign = this.#starSignStringFor(new Date(fDate.getFullYear(), month, date), StarSignConstruct.SHORT);
-    const ordinalQuery = `**${plural(occurances.length, 'occurance')}** of *${dateString}* (${shortStarSign})`;
+    const ordinalQuery = `**${plural(occurances.length, 'occurance')}** of *${dateString} ${shortStarSign}*`;
     const yearRange = `**\`${startYear}\`** and **\`${endYear}\`**`;
 
     return [
