@@ -249,11 +249,16 @@ export default class TemporalCommand extends SlashCommand {
 
   #ordinalDate = (month: number, day: number) => `${months[month]} ${this.#ordinal(day)}`;
 
-  #starSignStringFor(instant: Date, includeRelative: boolean = false): string {
+  #starSignStringFor(instant: Date, action: StarSignConstruct): string {
     const starSign = resolveStarSign(instant);
-    const { since, until } = starSign.range;
 
+    const shortSign = `${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`;
+    if (action & StarSignConstruct.SHORT) return shortSign;
+
+    const { since, until } = starSign.range;
     const isEndOfSequence = since.month > until.month || starSign.prev.month > since.month;
+
+    const hasRelative = action & StarSignConstruct.RELATIVE;
 
     const pastOffset = starSign.instant.setFullYear(
       instant.getFullYear() - +(isEndOfSequence && starSign.isNextMonth(instant))
@@ -263,11 +268,13 @@ export default class TemporalCommand extends SlashCommand {
     );
 
     return [
-      `${starSign.emoji} ${starSign.name} (*${starSign.latin}*)`,
+      shortSign,
+
       `from **${this.#ordinalDate(since.month, since.day)}**`,
-      ...(includeRelative && [this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME))]),
+      hasRelative && this.#showAndTell(time(pastOffset, TimeStyle.RELATIVE_TIME)),
+
       `to **${this.#ordinalDate(until.month, until.day)}**`,
-      ...(includeRelative && [this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))])
+      hasRelative && this.#showAndTell(time(futureOffset, TimeStyle.RELATIVE_TIME))
     ]
       .filter(Boolean)
       .map((line) => line.trim())
@@ -332,7 +339,7 @@ export default class TemporalCommand extends SlashCommand {
     ].map((style) => this.#showAndTell(time(invokedAt, style)));
 
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
-    const starSignString = this.#starSignStringFor(invokedTime, true);
+    const starSignString = this.#starSignStringFor(invokedTime, StarSignConstruct.RELATIVE);
 
     return `${invokedTimeString}\n> ${starSignString}`;
   }
@@ -447,7 +454,7 @@ export default class TemporalCommand extends SlashCommand {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFuture = exact.valueOf() > ctx.invokedAt;
 
-    const starSignString = this.#starSignStringFor(exact, false);
+    const starSignString = this.#starSignStringFor(exact, StarSignConstruct.NONE);
 
     return [
       `The provided arguments construct the timestamp of ${this.#showAndTell(
@@ -498,13 +505,19 @@ export default class TemporalCommand extends SlashCommand {
     ].map((style) => this.#showAndTell(time(snowDate, style)));
 
     const invokedTimeString = `This \`${subCommand}\` instant would occur ${relativeTime} at ${longTime} on ${shortDate}.`;
-    const snowSignString = this.#starSignStringFor(snowDate);
+    const snowSignString = this.#starSignStringFor(snowDate, StarSignConstruct.NONE);
 
     return [
       `${invokedTimeString}\n> ${snowSignString}`,
       `\`{timestamp: ${snowStamp}, worker: ${workerID}, process: ${processID}, increment: ${increment}}\``
     ].join('\n');
   }
+}
+
+enum StarSignConstruct {
+  NONE,
+  RELATIVE,
+  SHORT
 }
 
 interface TemporalOccuranceOptions {
