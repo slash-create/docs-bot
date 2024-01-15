@@ -334,7 +334,7 @@ export default class TemporalCommand extends SlashCommand {
     const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
     const starSignString = this.#starSignStringFor(invokedTime, true);
 
-    return `${invokedTimeString}\n${starSignString}`;
+    return `${invokedTimeString}\n> ${starSignString}`;
   }
 
   /**
