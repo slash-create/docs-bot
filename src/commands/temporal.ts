@@ -456,7 +456,7 @@ export default class TemporalCommand extends SlashCommand {
       `The provided arguments construct the timestamp of ${this.#showAndTell(
         time(exact, TimeStyle.LONG_FORMAT)
       )} ${time(exact, TimeStyle.RELATIVE_TIME)}`,
-      starSignString
+      '> ' + starSignString
     ].join('\n');
   }
 
