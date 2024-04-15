@@ -12,11 +12,11 @@ import {
 
 import { casual as chrono } from 'chrono-node';
 
-import { resolveStarSign } from '../util/StarSign';
-import { timeOptionFactory as timeOption } from '../util/commandOptions';
-import { plural } from '../util/common';
-import { time } from '../util/markup';
-import { TimeStyle } from '../util/types';
+import { plural } from '&common/helpers';
+import { timeOptionFactory as timeOption } from '&discord/command-options';
+import { time } from '&discord/markup';
+import { TimeStyle } from '&discord/types';
+import { resolveStarSign } from '&measures/star-sign';
 
 export default class TemporalCommand extends SlashCommand {
   constructor(creator: SlashCreator) {

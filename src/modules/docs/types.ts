@@ -3,6 +3,7 @@ import type { TypeNavigator } from "./navigator";
 export interface ProviderOptions {
   label: string;
   docsHost: string;
+  iconAsset: string;
   repoLocation: string;
   embedColor: number;
   docsURL: (tag: string, descriptor: AnyDescriptor) => string;

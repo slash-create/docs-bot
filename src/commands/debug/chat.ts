@@ -12,7 +12,7 @@ import {
   SlashCreator
 } from 'slash-create';
 
-import { ephemeralResponse as _ } from '../../util/common';
+import { ephemeralResponse as _ } from '&common/helpers';
 
 enum MentionPrefixes {
   user = '@',

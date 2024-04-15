@@ -14,3 +14,10 @@ export enum TimeStyle {
   /** in {n} / {n} ago */
   RELATIVE_TIME = 'R'
 }
+
+export interface SharedCommandInfo {
+  subCommands: string[];
+  options: Record<string, any>;
+  focused: string;
+  focusedOption: any;
+}

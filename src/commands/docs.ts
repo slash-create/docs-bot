@@ -1,3 +1,4 @@
+import { filter } from 'fuzzy';
 import {
   AnyComponentButton,
   AutocompleteChoice,
@@ -13,197 +14,161 @@ import {
   SlashCreator
 } from 'slash-create';
 
+import { ephemeralResponse as _ } from '&common/helpers';
+import { libraryOption, queryOption, shareOption, versionOption } from '&discord/command-options';
+import { displayUser, getCommandInfo } from '&discord/helpers';
+import * as responses from '&discord/responses';
+import { BASE_MDN_URL, VERSION_REGEX, standardObjects } from '&docs/constants';
+import { TypeNavigator } from '&docs/navigator';
+import { Provider } from '&docs/source';
+import { AnyCallableDescriptor, AnyDescriptor, AnyStructureDescriptor } from '&docs/types';
+
 import { component as deleteComponent } from '../components/delete-repsonse';
-import { docsOptionFactory, shareOption } from '../util/commandOptions';
-import { ephemeralResponse as _, displayUser, titleCase } from '../util/common';
-import { SC_RED, standardObjects } from '../util/constants';
-import { BASE_MDN_URL, buildDocsLink, buildGitHubLink } from '../util/linkBuilder';
-import { command } from '../util/markup';
-import {
-  AnyParentDescriptor,
-  AnyStructureDescriptor,
-  CallableDescriptor,
-  ChildStructureDescriptor,
-  ClassDescriptor,
-  FileMeta,
-  TypeSource,
-  TypeSymbol
-} from '../util/metaTypes';
-import TypeNavigator from '../util/typeNavigator';
+/**
+ * /docs search query*: string, version?*: string, share?: boolean = false
+ * /docs debug version?*: string
+ * /docs manifest version?*: string
+ */
 
 export default class DocumentationCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'docs',
-      description: 'Search documentation entries.',
-      // functionality here is derived from Eris' docs bot
+      description: 'Query documentation',
+      // functionality here was derived from Eris' docs bot
       options: [
         {
-          name: 'class',
-          description: 'Get entry for a class.',
+          name: 'search',
+          description: 'Search documentation entries.',
           type: CommandOptionType.SUB_COMMAND,
-          options: [docsOptionFactory('class'), shareOption]
-        },
-        {
-          name: 'event',
-          description: 'Get entry for an event.',
-          type: CommandOptionType.SUB_COMMAND,
-          options: [docsOptionFactory('class'), docsOptionFactory('event'), shareOption]
-        },
-        {
-          name: 'method',
-          type: CommandOptionType.SUB_COMMAND,
-          description: 'Get entry for a method.',
-          options: [docsOptionFactory('class'), docsOptionFactory('method'), shareOption]
-        },
-        {
-          name: 'prop',
-          description: 'Get entry for a class prop.',
-          type: CommandOptionType.SUB_COMMAND,
-          options: [docsOptionFactory('class'), docsOptionFactory('prop'), shareOption]
-        },
-        {
-          name: 'typedef',
-          description: 'Get entry for a type definition.',
-          type: CommandOptionType.SUB_COMMAND,
-          options: [docsOptionFactory('typedef'), shareOption]
+          options: [
+            libraryOption,
+            queryOption,
+            versionOption,
+            shareOption
+          ]
         }
       ]
     });
   }
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[] | void> {
-    const command = ctx.subcommands[0];
-    const focusedOption: string = ctx.options[command][ctx.focused];
+    const { subCommands: [command], options, focused, focusedOption } = getCommandInfo(ctx);
+
+    if (!options.library && focused !== 'library') return [responses.select];
 
     switch (ctx.focused) {
-      case 'class':
-      case 'typedef': {
-        let matchingKeys = TypeNavigator.fuzzyFilter(focusedOption, ctx.focused);
-
-        if (command === 'event')
-          matchingKeys = matchingKeys.filter((value) => 'events' in TypeNavigator.getClassDescriptor(value.string));
-
-        return matchingKeys.map((value) => ({ name: value.string, value: value.string }));
+      case 'library': {
+        return filter(options.library ?? '', Provider.all, { extract: (input) => input.label })
+          .map((result) => ({ name: `${result.original.label} (${result.original.docsHost})`, value: result.string }));
       }
-      case 'event':
-      case 'method':
-      case 'prop':
-        return this.commonAutocompleteSearch(ctx, command);
+
+      case 'version': {
+        const provider = Provider.get(options.library);
+
+        if (!provider) return [responses.unknown];
+        if (!provider.aggregator.ready) return [responses.loading];
+
+        const results = focusedOption
+          ? provider.aggregator.filter(focusedOption)
+          : provider.aggregator.all.slice(0, 20).map((version) => ({ string: version }));
+
+        return results.map((value) => {
+          let tagString: string;
+
+          if (VERSION_REGEX.test(value.string)) tagString = 'Release';
+          else if (value.string === 'master') tagString = 'Upstream';
+          else if (value.string !== 'latest') tagString = 'Branch';
+          else tagString = provider.aggregator.latestRelease;
+
+          return { name: `${value.string} (${tagString})`, value: value.string };
+        });
+      }
+
+      case 'query': {
+        const { library, version = 'latest' } = options;
+
+        const provider = Provider.get(library);
+        if (!provider) return [responses.unknown];
+        if (!provider.aggregator.ready) return [responses.loading];
+
+        const typeNavigator = provider.aggregator.getTag(version);
+        if (!typeNavigator.ready) return [responses.loading];
+
+        return typeNavigator.filterEntity(focusedOption).map((value) => {
+          return { name: `${value.string} (🧮 ${value.score})`, value: value.string };
+        });
+      }
+
       default: {
         return [];
       }
     }
   }
 
-  async commonAutocompleteSearch(ctx: AutocompleteContext, command: string): Promise<AutocompleteChoice[]> {
-    const options = ctx.options[command];
-    if (!options.class)
-      return [
-        {
-          name: 'Search for a class entry first.',
-          value: 'null'
-        }
-      ];
+  async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
+    if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
 
-    const assumedPartialKey = TypeNavigator.joinKey([options.class, options[ctx.focused]], TypeSymbol[ctx.focused]);
+    const [subCommand] = ctx.subcommands;
+    const options = ctx.options[subCommand];
 
-    /**
-     * argument 2: {focused} has certainty of being one of the three options selected within each subcommand
-     * either the subcommand itself, or the option can be used - no difference as to the outcome (including forced type assertion)
-     */
-    const results = TypeNavigator.fuzzyFilter(assumedPartialKey, ctx.focused as TypeSource);
-    // const classEntry = TypeNavigator.getClassDescriptor(options.class);
-    return results
-      .map((entry) => {
-        const typeEntry = TypeNavigator.findFirstMatch(entry.string);
-
-        const params = 'params' in typeEntry ? typeEntry.params : [];
-        const hasArguments = params && params.length > 0;
-
-        return {
-          name: `${entry.string} ${hasArguments ? `(${params.length} arguments)` : ''} {score: ${entry.score}}`.trim(),
-          value: typeEntry.name
-        };
-      })
-      .filter(Boolean);
+    switch (subCommand) {
+      case 'search':
+        return this.runSearch(ctx, options);
+    }
   }
 
-  async run(ctx: CommandContext): Promise<MessageOptions | string | void> {
-    // if (!this.ids.has('global')) this.ids.set('global', ctx.commandID);
+  async runSearch(ctx: CommandContext, options: DocSearchOptions): Promise<MessageOptions | string | void> {
+    const provider = Provider.get(options.library);
 
-    const calledType = ctx.subcommands[0];
-    const options = ctx.options[calledType];
+    if (!provider) return responses.unknown.name;
+    if (!provider.aggregator.ready) {
+      await ctx.defer(!options.share);
+      await provider.aggregator.onReady;
+    }
+
+    const typeNavigator = provider.aggregator.getTag(options.version ?? 'latest');
+    if (!typeNavigator.ready) {
+      await ctx.defer(!options.share);
+      await typeNavigator.onReady;
+    }
+
+    const descriptor = typeNavigator.get(options.query.split('(')[0].trim());
+
+    // yes... literal null
+    if (!descriptor) return _(`Entity was \`null\`, please check arguments.`);
 
     const embed: MessageEmbedOptions = {
-      color: SC_RED,
+      color: provider.embedColor,
+      title: `\`${descriptor.toString()}\``,
+      url: typeNavigator.docsURL(descriptor),
       fields: [],
       timestamp: new Date(ctx.invokedAt),
       footer: {
-        text: titleCase(calledType)
+        text: `${provider.label} 🏷️ ${options.version ?? typeNavigator.tag} (🌐 ${provider.docsHost})`,
+        icon_url: provider.iconURL
       }
     };
 
+    const fragments: [string, string?] = [descriptor.species === 'event' ? descriptor.name.replace(/^(?=\w)/, 'e-') : descriptor.name];
+    if (descriptor.parent) fragments.unshift(descriptor.parent.name);
+
+    if (descriptor.species === 'class' || descriptor.species === 'typedef') {
+      embed.fields = this.getClassEntityFields(descriptor, descriptor.species === 'class');
+
+      if (descriptor.species === 'class' && descriptor.extends)
+        embed.title += ` extends \`${descriptor.extends}\``;
+    } else
+      this.addCommonFields(embed, typeNavigator, descriptor);
+
     if (options.share) {
-      embed.footer.text += ` | Requested by ${displayUser(ctx.user)}`;
-      embed.footer.icon_url = (ctx.member ? ctx.member : ctx.user).avatarURL;
-    }
-
-    const fragments: [string, string?] = [null, null];
-    let typeMeta: FileMeta = null;
-
-    switch (calledType) {
-      case 'class':
-      case 'typedef': {
-        const descriptor = TypeNavigator.findFirstMatch(options[calledType]) as AnyParentDescriptor;
-        try {
-          typeMeta = descriptor.meta;
-        } catch {
-          return _(`Entity was \`null\`, please check arguments.`);
-        }
-
-        embed.fields = this.getClassEntityFields(descriptor, 'construct' in descriptor);
-        embed.title = descriptor.name;
-
-        if ('extends' in descriptor) {
-          embed.title += ` *extends \`${descriptor.extends.join('')}\`*`;
-        }
-
-        this.addCommonFields(embed, descriptor);
-
-        fragments[0] = descriptor.name;
-        break;
-      }
-      default: {
-        if (options[calledType] === 'null')
-          // yes... literal null
-          return _(`Entity was \`null\`, please check arguments.`);
-
-        const parentEntry = TypeNavigator.findFirstMatch(options.class) as ClassDescriptor;
-        const typeEntry = TypeNavigator.findFirstMatch(options.class, options[calledType]) as ChildStructureDescriptor;
-        try {
-          typeMeta = typeEntry.meta;
-        } catch {
-          // second catch, in case the parent entry is null
-          return {
-            content: 'Entity not found, please check arguments.',
-            ephemeral: true
-          };
-        }
-
-        const combinedKey = TypeNavigator.joinKey([options.class, options[calledType]], TypeSymbol[calledType]);
-
-        embed.title = combinedKey;
-
-        this.addCommonFields(embed, typeEntry, parentEntry);
-
-        // exact check, if typeEntry were a class i'd do instance of... maybe
-        fragments[0] = options.class;
-        fragments[1] = (calledType === 'event' ? 'e-' : '') + options[calledType];
+      embed.author = {
+        name: `Requested by ${displayUser(ctx.user)}`,
+        icon_url: (ctx.member ? ctx.member : ctx.user).avatarURL
       }
     }
 
-    const components = this.getLinkComponents(fragments, typeMeta, calledType === 'typedef');
+    const components = this.getLinkComponents(typeNavigator, descriptor);
     if (options.share) components.unshift(deleteComponent);
 
     return {
@@ -220,55 +185,56 @@ export default class DocumentationCommand extends SlashCommand {
 
   private addCommonFields(
     embed: MessageEmbedOptions,
-    targetDescriptor: AnyStructureDescriptor,
-    parentDescriptor: AnyParentDescriptor = targetDescriptor as AnyParentDescriptor
+    navigator: TypeNavigator,
+    descriptor: AnyDescriptor
     // implied parent of current target is itself
   ): MessageEmbedOptions {
     // embed = { ...embed };
 
-    if ('description' in targetDescriptor)
-      embed.description = this.parseDocString(targetDescriptor.description, parentDescriptor);
+    if ('description' in descriptor) embed.description = this.parseDocString(navigator, descriptor.description);
 
-    if ('type' in targetDescriptor && !('params' in targetDescriptor))
+    if ('type' in descriptor && !('params' in descriptor))
       embed.fields.push({
         name: 'Type',
-        value: this.resolveType(targetDescriptor.type)
+        value: this.resolveType(navigator, descriptor.type)
       });
 
-    if ('params' in targetDescriptor)
-      embed.fields.push(...this.getArgumentEntityFields(parentDescriptor, targetDescriptor));
+    if ('params' in descriptor) embed.fields.push(...this.getArgumentEntityFields(navigator, descriptor));
 
-    if ('returns' in targetDescriptor)
+    if ('returns' in descriptor)
       embed.fields.push({
         name: 'Returns',
-        value: this.resolveType(targetDescriptor.returns)
+        value: this.resolveType(navigator, descriptor.returns)
       });
 
     return embed;
   }
 
-  private getLinkComponents = (target: [string, string?], meta: FileMeta, isTypedef: boolean): AnyComponentButton[] => [
-    {
-      type: ComponentType.BUTTON,
-      style: ButtonStyle.LINK,
-      url: buildDocsLink(isTypedef ? 'typedef' : 'class', ...target),
-      label: 'Open Docs',
-      emoji: {
-        name: '📕'
+  private getLinkComponents = (
+    navigator: TypeNavigator,
+    descriptor: AnyDescriptor
+  ): AnyComponentButton[] => [
+      {
+        type: ComponentType.BUTTON,
+        style: ButtonStyle.LINK,
+        url: navigator.docsURL(descriptor),
+        label: 'Open Docs',
+        emoji: {
+          name: '📕'
+        }
+      },
+      {
+        type: ComponentType.BUTTON,
+        style: ButtonStyle.LINK,
+        url: `${navigator.baseRepoURL('blob')}/${descriptor.meta}`,
+        label: 'Open GitHub',
+        emoji: {
+          name: '📂'
+        }
       }
-    },
-    {
-      type: ComponentType.BUTTON,
-      style: ButtonStyle.LINK,
-      url: buildGitHubLink(`${meta.path}/${meta.file}`, [meta.line]),
-      label: 'Open GitHub',
-      emoji: {
-        name: '📂'
-      }
-    }
-  ];
+    ];
 
-  private getArgumentEntityFields = (parent: AnyParentDescriptor, argument: CallableDescriptor): EmbedField[] => {
+  private getArgumentEntityFields = (navigator: TypeNavigator, argument: AnyCallableDescriptor): EmbedField[] => {
     const { params } = argument;
 
     if (!params.length) return [];
@@ -276,19 +242,18 @@ export default class DocumentationCommand extends SlashCommand {
     return params.map((argument, index) => ({
       name: index === 0 ? 'Arguments' : '\u200b',
       value: [
-        `\`${argument.name}\` - ${this.resolveType(argument.type)} ${
-          argument.default ? `= ${argument.default}` : ''
-        }`.trim(),
-        'description' in argument ? this.parseDocString(argument.description, parent) : ''
+        `\`${argument.name}\` - ${this.resolveType(navigator, argument.type)} ${argument.default ? `= ${argument.default}` : ''
+          }`.trim(),
+        'description' in argument ? this.parseDocString(navigator, argument.description) : ''
       ].join('\n')
     }));
   };
 
-  private getClassEntityFields = (parent: AnyParentDescriptor, isClass: boolean): EmbedField[] =>
+  private getClassEntityFields = (parent: AnyStructureDescriptor, isClass: boolean): EmbedField[] =>
     [
       // ...('construct' in classEntry && this.getArgumentEntityFields(classEntry.construct, 'constructor')),
       'props' in parent && {
-        name: `📏 ${isClass ? this.buildCommandMention('prop') : 'Properties'} (${parent.props.length})`,
+        name: `📏 Properties (${parent.props.length})`,
         value:
           parent.props
             .filter((propEntry) => !propEntry.name.startsWith('_'))
@@ -297,7 +262,7 @@ export default class DocumentationCommand extends SlashCommand {
         inline: true
       },
       'methods' in parent && {
-        name: `🔧 ${isClass ? this.buildCommandMention('method') : 'Method'} (${parent.methods.length})`,
+        name: `🔧 Methods (${parent.methods.length})`,
         value:
           parent.methods
             .filter((methodEntry) => methodEntry.access !== 'private' || !methodEntry.name.startsWith('_'))
@@ -307,7 +272,7 @@ export default class DocumentationCommand extends SlashCommand {
         inline: true
       },
       'events' in parent && {
-        name: `⌚ ${isClass ? this.buildCommandMention('event') : 'Events'} (${parent.events.length})`,
+        name: `⌚ Events (${parent.events.length})`,
         value:
           parent.events
             // implied of the existence as a a class
@@ -318,28 +283,28 @@ export default class DocumentationCommand extends SlashCommand {
       }
     ].filter((field) => field && field.value !== 'None');
 
-  private parseDocString = (docString: string, parentStruct: AnyStructureDescriptor): string =>
+  private parseDocString = (navigator: TypeNavigator, docString: string): string =>
     docString.replace(/(?:^|{)@(?:see|link) ([^}]+)(?:}|$)/g, (_, ref) => {
-      let prefix = '';
-
-      if (['#', '~'].some((char) => ref.startsWith(char))) {
-        prefix = parentStruct.name;
-      }
-
-      return this.resolveType([prefix + ref]);
+      return this.resolveType(navigator, [ref]);
     });
 
-  private resolveType = (type: string[][][] | string[][] | string[]): string =>
-    type
+  private resolveType = (navigator: TypeNavigator, type: string[][][] | string[][] | string[] | string): string => {
+    return (Array.isArray(type) ? type : [type])
       .flat(2)
       .map((fragment) => {
-        if (fragment in TypeNavigator.typeMap.all) return `[${fragment}](${buildDocsLink('typedef', fragment)})`;
+        if (navigator.map.has(fragment))
+            return `[${fragment}](${navigator.aggregator.provider.rawDocsURL(navigator.tag, 'typedef', fragment)})`;
         else if (fragment in standardObjects) return `[${fragment}](${BASE_MDN_URL}/${standardObjects[fragment]})`;
         return fragment;
       })
       .join('')
       .replace(/(<|>)/g, (brace) => `\\${brace}`);
+    }
+}
 
-  private buildCommandMention = (commandName: string) =>
-    command([this.commandName, commandName], this.ids.get('global'));
+interface DocSearchOptions {
+  library: string;
+  query: string;
+  version?: string;
+  share?: boolean;
 }

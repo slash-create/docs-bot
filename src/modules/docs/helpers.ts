@@ -3,11 +3,15 @@ import type { AnyChildDescriptor, AnyDescriptor, AnyStructureDescriptor, Documen
 
 export function getSymbol(type: string) {
   switch (type.toLowerCase()) {
+    case 'event':
     case 'events':
       return '$';
+    case 'method':
     case 'methods':
       return '#';
+    case 'member':
     case 'members':
+    case 'prop':
     case 'props':
       return '~';
     default:
@@ -36,9 +40,17 @@ export function defineCommon(
     return ('parent' in this ? this.parent.name + symbol : '') + this.name;
   });
 
-  Reflect.set(focus.meta, 'toString', function (this: DocumentationFile) {
-    return `${this.path}/${this.file}#L${this.line}`;
-  });
+  if (focus.meta) {
+    Reflect.set(focus.meta, 'toString', function (this: DocumentationFile) {
+      return `${this.path}/${this.file}#L${this.line}`;
+    });
+  } else {
+    Reflect.set(focus, 'meta', {
+      toString(this: AnyDescriptor) {
+        return this.parent.meta.toString();
+      }
+    });
+  }
 
   Reflect.set(focus, Symbol.species, type);
 
@@ -48,7 +60,7 @@ export function defineCommon(
     }
   });
 
-  Reflect.defineProperty(focus, 'type', {
+  Reflect.defineProperty(focus, 'species', {
     get(this: AnyDescriptor) {
       return this[Symbol.species];
     }

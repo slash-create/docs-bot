@@ -24,11 +24,17 @@ export class TypeNavigator {
     EVENT: TypeSymbol.Event
   };
 
-  #ready = false;
-  #fetchedAt?: number;
-  #raw?: DocumentationRoot;
-  #interval: FixedInterval;
   readonly aggregator: VersionAggregator;
+  knownFiles: string[] = [];
+  map: Collection<string, AnyDescriptor> = new Collection();
+  // {type} -> {entry} + {get parent?}
+  tag: string;
+
+  #deferred = Promise.withResolvers();
+  #fetchedAt?: number;
+  #interval: FixedInterval;
+  #raw?: DocumentationRoot;
+  #ready = false;
 
   get meta() {
     if (!this.#ready) return undefined;
@@ -39,10 +45,9 @@ export class TypeNavigator {
     return this.#ready;
   }
 
-  knownFiles: string[] = [];
-  map: Collection<string, AnyDescriptor> = new Collection();
-  // {type} -> {entry} + {get parent?}
-  tag: string;
+  get onReady() {
+    return this.#deferred.promise;
+  }
 
   constructor(tag: string, aggregator: VersionAggregator) {
     this.tag = tag;
@@ -67,6 +72,12 @@ export class TypeNavigator {
     return this.aggregator.provider.baseRepoURL(this.tag, view);
   }
 
+  codeFileURL(ref: string, file: string, lineRange: [number, number?]) {
+    const lineString = lineRange.filter(Boolean).map((n) => `L${n}`).join('-');
+
+    return `${this.baseRepoURL('blob')}/${ref}/${file}#${lineString}`;
+  }
+
   docsURL(descriptor: AnyDescriptor) {
     return this.aggregator.provider.docsURL(this.tag, descriptor)
   }
@@ -83,10 +94,16 @@ export class TypeNavigator {
     return this.map.get(entity) as T;
   }
 
-  filter(entityPath: string, limit: number = 25) {
+  filterEntity(entityPath: string, limit: number = 20) {
     if (!this.#ready) return [];
 
     return filter(entityPath, [...this.map.keys()]).slice(0, limit);
+  }
+
+  filterFile(filePath: string, limit: number = 20) {
+    if (!this.#ready) return [];
+
+    return filter(filePath, this.knownFiles).slice(0, limit);
   }
   /*
   find(parentName: string, childName?: string) {
@@ -102,9 +119,10 @@ export class TypeNavigator {
   */
   async refresh() {
     this.#ready = false;
+    this.#deferred = Promise.withResolvers();
     this.map.clear();
 
-    const res = await fetch(this.#targetURI);
+    const res = await this.aggregator.provider.fetchGitHubAPI(this.#targetURI);
     this.#raw = await res.json();
 
     this.#fetchedAt = Date.now();
@@ -118,6 +136,7 @@ export class TypeNavigator {
     }
 
     this.#ready = true;
+    this.#deferred.resolve();
   }
 
   #define<Descriptor extends AnyDescriptor>(descriptorType: string, descriptor: Descriptor) {
@@ -140,7 +159,8 @@ export class TypeNavigator {
           defineCommon(this, species, descriptor, entry, symbol);
 
           this.map.set(entry.toString(), entry);
-          this.#registerKnownFile([entry.meta.path, entry.meta.file]);
+          if (entry.meta)
+            this.#registerKnownFile([entry.meta.path, entry.meta.file]);
         }
       }
     }

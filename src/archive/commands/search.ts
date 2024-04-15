@@ -8,8 +8,8 @@ import {
 } from 'slash-create';
 
 import { queryOption } from '../util/commandOptions';
-import { ephemeralResponse as _, trimContent } from '../util/common';
-import { command } from '../util/markup';
+import { ephemeralResponse as _ } from '../util/common';
+import { command } from '&discord/markup';
 import TypeNavigator from '../util/typeNavigator';
 
 export default class SearchCommand extends SlashCommand {
@@ -47,9 +47,12 @@ export default class SearchCommand extends SlashCommand {
 
     const commandMention = command(['docs', subtype], this.docsCommand.ids.get('global'));
 
-    return _(trimContent`
-      You selected \`${query}\`, this is not a entry retrieval command.
-      *Entries found in this command may include internal structures not included on the primary command.*
-      > Please use \`${commandString.join(' ')}\` - ${commandMention}.`);
+    return _(
+      [
+        `You selected \`${query}\`, this is not a entry retrieval command.`,
+        '*Entries found in this command may include internal structures not included on the primary command.*',
+        `> Please use \`${commandString.join(' ')}\` - ${commandMention}.`
+      ].join('\n')
+    );
   }
 }

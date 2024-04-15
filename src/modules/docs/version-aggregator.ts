@@ -25,6 +25,7 @@ export default class VersionAggregator {
     return this.#ready;
   }
 
+  #deferred = Promise.withResolvers();
   #interval: FixedInterval;
 
   #releases: string[];
@@ -71,6 +72,10 @@ export default class VersionAggregator {
     return [].concat(this.branches, this.releases);
   }
 
+  get onReady() {
+    return this.#deferred.promise;
+  }
+
   filter(query: string) {
     return filter(query, this.all);
   }
@@ -94,8 +99,9 @@ export default class VersionAggregator {
 
   async refresh() {
     this.#ready = false;
+    this.#deferred = Promise.withResolvers();
 
-    const res = await fetch(this.provider.baseStructURL('docs'));
+    const res = await this.provider.fetchGitHubAPI(this.provider.baseStructURL('docs'));
     const data: GitTreeBranchResponse = await res.json();
 
     delete this._latestRelease;
@@ -113,12 +119,12 @@ export default class VersionAggregator {
 
       const array = isRelease ? this.#releases : this.#branches;
       array.unshift(tag);
-
-      console.debug(`Found ${isRelease ? 'release' : 'branch'} ${tag}`);
     }
 
     this.#releases.sort((v1, v2) => semver.order(v2.slice(1), v1.slice(1)));
+    console.log(`[${this.provider.docsHost}] Loaded ${this.#branches.length} branches & ${this.#releases.length} releases`);
     this.#ready = true;
+    this.#deferred.resolve();
   }
 
   destroy() {

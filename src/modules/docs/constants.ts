@@ -30,12 +30,6 @@ export const standardObjects = {
   void: 'undefined'
 };
 
-export const commandTypeStrings = {
-  [ApplicationCommandType.CHAT_INPUT]: ['Chat Input', '/'],
-  [ApplicationCommandType.MESSAGE]: ['Message', '*'],
-  [ApplicationCommandType.USER]: ['User', '@']
-} as const;
-
 export const BASE_MDN_URL = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects';
 
 export const GITHUB_WEB_URL = 'https://github.com';
