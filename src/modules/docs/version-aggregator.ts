@@ -1,35 +1,37 @@
 import { semver } from 'bun';
-
-import { FixedInterval } from '../common/fixed-interval';
-import { ONE_HOUR } from '../../util/constants';
-
-import { GITHUB_API_URL, SOURCE_REPO, VERSION_REGEX } from './constants';
-import { AggregatorInformation, GitTreeBranchResponse } from './types';
-import { TypeNavigator } from './navigator';
 import { filter } from 'fuzzy';
 
+import { FixedInterval } from '&common/fixed-interval';
+import { TIME } from '&common/constants';
+
+import { VERSION_REGEX } from './constants';
+import { AggregatorInformation, GitTreeBranchResponse } from './types';
+import { TypeNavigator } from './navigator';
+import { Provider } from './source';
+
 export default class VersionAggregator {
-  static #lastFetch: number;
-  static _latestRelease?: string;
-  static #ready: boolean = false;
+  readonly provider: Provider;
 
-  static get ready() {
-    return this.#ready;
-  }
-
-  static #interval: FixedInterval;
-
-  static #releases: string[];
-  static #branches: string[];
-  static #navigators: Map<string, TypeNavigator>;
-
-  static #endpoint = `${GITHUB_API_URL}/repos/${SOURCE_REPO}/git/trees/docs` as const;
-
-  static {
+  constructor(provider: Provider) {
+    this.provider = provider;
     this.#setupInterval();
   }
 
-  static get debug(): AggregatorInformation {
+  #lastFetch: number;
+  _latestRelease?: string;
+  #ready: boolean = false;
+
+  get ready() {
+    return this.#ready;
+  }
+
+  #interval: FixedInterval;
+
+  #releases: string[];
+  #branches: string[];
+  #navigators: Map<string, TypeNavigator>;
+
+  get debug(): AggregatorInformation {
     const self = this;
     return {
       ready: this.#ready,
@@ -44,7 +46,7 @@ export default class VersionAggregator {
     };
   }
 
-  static get latestRelease() {
+  get latestRelease() {
     if (!this.#ready) return null;
 
     if (!this._latestRelease) {
@@ -54,28 +56,28 @@ export default class VersionAggregator {
     return this._latestRelease;
   }
 
-  static get releases() {
+  get releases() {
     if (!this.#ready) return [];
     return this.#releases.slice();
   }
 
-  static get branches() {
+  get branches() {
     if (!this.#ready) return [];
     return this.#branches.slice();
   }
 
-  static get all() {
+  get all() {
     if (!this.#ready) return [];
     return [].concat(this.branches, this.releases);
   }
 
-  static filter(query: string) {
+  filter(query: string) {
     return filter(query, this.all);
   }
 
-  static getTag(tag: string): TypeNavigator | undefined {
+  getTag(tag: string): TypeNavigator | undefined {
     if (this.all.includes(tag) && !this.#navigators.has(tag)) {
-      this.#navigators.set(tag, new TypeNavigator(tag));
+      this.#navigators.set(tag, new TypeNavigator(tag, this));
     }
 
     return this.#navigators.get(tag);
@@ -83,17 +85,17 @@ export default class VersionAggregator {
     // otherwise... not my problem - which also caches if the class isn't ready
   }
 
-  static #setupInterval(force: boolean = true) {
+  #setupInterval(force: boolean = true) {
     if (this.#interval && !force) return;
 
-    this.#interval = new FixedInterval(ONE_HOUR, 0, false, this.refresh.bind(this));
+    this.#interval = new FixedInterval(TIME.HOUR * 3, 0, false, this.refresh.bind(this));
     this.refresh();
   }
 
-  static async refresh() {
+  async refresh() {
     this.#ready = false;
 
-    const res = await fetch(this.#endpoint);
+    const res = await fetch(this.provider.baseStructURL('docs'));
     const data: GitTreeBranchResponse = await res.json();
 
     delete this._latestRelease;
@@ -119,7 +121,7 @@ export default class VersionAggregator {
     this.#ready = true;
   }
 
-  static destroy() {
+  destroy() {
     this.#interval.destroy();
     this.#ready = false;
   }

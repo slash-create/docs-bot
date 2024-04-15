@@ -1,3 +1,16 @@
+import type { TypeNavigator } from "./navigator";
+
+export interface ProviderOptions {
+  label: string;
+  docsHost: string;
+  repoLocation: string;
+  embedColor: number;
+  docsURL: (tag: string, descriptor: AnyDescriptor) => string;
+  rawDocsURL: (tag: string, species: string, type: string) => string;
+}
+
+export type GitHubViewMode = 'tree' | 'blob' | 'blame' | 'edit' | 'commits';
+
 // #region Aggregator Types
 
 export interface GitTreeBranchResponse {
@@ -40,6 +53,8 @@ export interface DocumentationFile {
   file: string;
   line: number;
   path: string;
+
+  toString(): string;
 }
 
 export interface DocumentationMeta {
@@ -54,9 +69,12 @@ export interface BaseDescriptor<Species, Parent = undefined> {
 
   is(query: string | Species): query is Species;
   toString(): string;
+
   readonly parent: Parent;
   readonly [Symbol.species]: Species;
   readonly species: Species;
+
+  readonly navigator: TypeNavigator;
 }
 
 export interface ClassDescriptor extends BaseDescriptor<'class'> {

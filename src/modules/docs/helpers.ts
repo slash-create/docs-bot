@@ -1,4 +1,5 @@
-import { AnyChildDescriptor, AnyDescriptor, AnyStructureDescriptor } from './types';
+import type { TypeNavigator } from './navigator';
+import type { AnyChildDescriptor, AnyDescriptor, AnyStructureDescriptor, DocumentationFile } from './types';
 
 export function getSymbol(type: string) {
   switch (type.toLowerCase()) {
@@ -14,7 +15,13 @@ export function getSymbol(type: string) {
   }
 }
 
-export function defineCommon(type: string, parent: AnyDescriptor, child?: AnyChildDescriptor, symbol?: string) {
+export function defineCommon(
+  navigator: TypeNavigator,
+  type: string,
+  parent: AnyDescriptor,
+  child?: AnyChildDescriptor,
+  symbol?: string
+): AnyDescriptor {
   if (child) {
     Reflect.defineProperty(child, 'parent', {
       get() {
@@ -29,12 +36,24 @@ export function defineCommon(type: string, parent: AnyDescriptor, child?: AnyChi
     return ('parent' in this ? this.parent.name + symbol : '') + this.name;
   });
 
+  Reflect.set(focus.meta, 'toString', function (this: DocumentationFile) {
+    return `${this.path}/${this.file}#L${this.line}`;
+  });
+
   Reflect.set(focus, Symbol.species, type);
+
+  Reflect.defineProperty(focus, 'navigator', {
+    get(this: AnyDescriptor) {
+      return navigator;
+    }
+  });
+
   Reflect.defineProperty(focus, 'type', {
     get(this: AnyDescriptor) {
       return this[Symbol.species];
     }
   });
+
   Reflect.set(focus, 'is', function (this: AnyDescriptor, ...query: string[]) {
     return query.includes(this.species);
   });

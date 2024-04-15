@@ -8,14 +8,14 @@
  */
 
 import { filter } from 'fuzzy';
-
-import { ONE_HOUR } from '../../util/constants';
-import { FixedInterval } from '../common/fixed-interval';
-import { GITHUB_RAW_URL, SOURCE_REPO } from './constants';
-
-import { AnyChildDescriptor, AnyDescriptor, DocumentationRoot, TypeSymbol } from './types';
 import { Collection } from 'slash-create';
+
+import { TIME } from '&common/constants';
+import { FixedInterval } from '&common/fixed-interval';
+
+import { AnyChildDescriptor, AnyDescriptor, DocumentationRoot, GitHubViewMode, TypeSymbol } from './types';
 import { defineCommon, getSymbol } from './helpers';
+import VersionAggregator from './version-aggregator';
 
 export class TypeNavigator {
   static knownSymbols = {
@@ -28,6 +28,7 @@ export class TypeNavigator {
   #fetchedAt?: number;
   #raw?: DocumentationRoot;
   #interval: FixedInterval;
+  readonly aggregator: VersionAggregator;
 
   get meta() {
     if (!this.#ready) return undefined;
@@ -41,8 +42,11 @@ export class TypeNavigator {
   knownFiles: string[] = [];
   map: Collection<string, AnyDescriptor> = new Collection();
   // {type} -> {entry} + {get parent?}
+  tag: string;
 
-  constructor(public readonly tag: string) {
+  constructor(tag: string, aggregator: VersionAggregator) {
+    this.tag = tag;
+    this.aggregator = aggregator;
     this.#setupInterval();
 
     // #fetchedAt
@@ -51,12 +55,24 @@ export class TypeNavigator {
   #setupInterval(force: boolean = false) {
     if (this.#interval && !force) return;
 
-    this.#interval = new FixedInterval(ONE_HOUR / 4, 0, false, this.refresh.bind(this));
+    this.#interval = new FixedInterval(TIME.HOUR / 4, 0, false, this.refresh.bind(this));
     this.refresh();
   }
 
   get #targetURI() {
-    return `${GITHUB_RAW_URL}/${SOURCE_REPO}/docs/${this.tag}.json`;
+    return `${this.aggregator.provider.baseRawURL('docs')}/${this.tag}.json`;
+  }
+
+  baseRepoURL(view: GitHubViewMode = 'tree') {
+    return this.aggregator.provider.baseRepoURL(this.tag, view);
+  }
+
+  docsURL(descriptor: AnyDescriptor) {
+    return this.aggregator.provider.docsURL(this.tag, descriptor)
+  }
+
+  rawDocsURL(species: string, type: string) {
+    return this.aggregator.provider.rawDocsURL(this.tag, species, type);
   }
 
   static joinKey(entryPath: string[], connector: string) {
@@ -105,7 +121,7 @@ export class TypeNavigator {
   }
 
   #define<Descriptor extends AnyDescriptor>(descriptorType: string, descriptor: Descriptor) {
-    defineCommon(descriptorType, descriptor);
+    defineCommon(this, descriptorType, descriptor);
 
     this.map.set(descriptor.toString(), descriptor);
     this.#registerKnownFile([descriptor.meta.path, descriptor.meta.file]);
@@ -121,7 +137,7 @@ export class TypeNavigator {
         for (const entry of descriptor[location] as AnyChildDescriptor[]) {
           const symbol = getSymbol(species);
 
-          defineCommon(species, descriptor, entry, symbol);
+          defineCommon(this, species, descriptor, entry, symbol);
 
           this.map.set(entry.toString(), entry);
           this.#registerKnownFile([entry.meta.path, entry.meta.file]);
