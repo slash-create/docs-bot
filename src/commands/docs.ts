@@ -145,7 +145,7 @@ export default class DocumentationCommand extends SlashCommand {
       fields: [],
       timestamp: new Date(ctx.invokedAt),
       footer: {
-        text: `${provider.label} 🏷️ ${options.version ?? typeNavigator.tag} (🌐 ${provider.docsHost})`,
+        text: `${provider.label} 🏷️ ${typeNavigator.tag} (🌐 ${provider.docsHost})`,
         icon_url: provider.iconURL
       }
     };
