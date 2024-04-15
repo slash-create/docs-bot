@@ -35,83 +35,84 @@ export class Provider implements ProviderOptions {
     return `${GITHUB_RAW_URL}/${this.repoLocation}/${ref}`;
   }
 
-  static readonly sharedBuilders = {
-    slashCreate(this: Provider, tag: string, descriptor: AnyDescriptor) {
-      let path = descriptor.name;
-      let species: AnyDescriptor['species'];
+  static readonly sharedBuilders: Record<string, Pick<ProviderOptions, 'docsURL' | 'rawDocsURL'>> = {
+    slashCreate: {
+      docsURL(this: Provider, tag: string, descriptor: AnyDescriptor) {
+        let path = descriptor.name;
+        let species: AnyDescriptor['species'];
 
-      if (descriptor.species === 'event')
-        path = 'e-' + path;
+        if (descriptor.species === 'event')
+          path = 'e-' + path;
 
-      if (descriptor.parent) {
-        path = descriptor.parent.name + '?scrollTo=' + path;
-        species = descriptor.parent.species;
+        if (descriptor.parent) {
+          path = descriptor.parent.name + '?scrollTo=' + path;
+          species = descriptor.parent.species;
+        }
+
+        return `https://${this.docsHost}/#/docs/main/${tag}/${species}/${path}`;
+      },
+      rawDocsURL(this: Provider, tag: string, species: string, type: string) {
+        return `https://${this.docsHost}/#/docs/main/${tag}/${species}/${type}`
       }
-
-      return `https://${this.docsHost}/#/docs/main/${tag}/${species}/${path}`;
     },
-    rawSlashCreate(this: Provider, tag: string, species: string, type: string) {
-      return `https://${this.docsHost}/#/docs/main/${tag}/${species}/${type}`
-    },
-    discordJS(this: Provider, tag: string, descriptor: AnyDescriptor) {
-      let path = descriptor.name;
+    discordJS: {
+      docsURL(this: Provider, tag: string, descriptor: AnyDescriptor) {
+        let path = descriptor.name;
 
-      if (descriptor.parent)
-        path += `${descriptor.parent.name}:${capitalize(descriptor.parent.species)}#${path}`;
-      else path += ':' + capitalize(descriptor.species);
+        if (descriptor.parent)
+          path += `${descriptor.parent.name}:${capitalize(descriptor.parent.species)}#${path}`;
+        else path += ':' + capitalize(descriptor.species);
 
-      // infer docsHost as "discordjs.dev/docs/packages"
-      return `https://${this.docsHost}/${tag}/${path}`;
-    },
-    rawDiscordJS(this: Provider, tag: string, species: string, type: string) {
-      const [parent, child] = type.split('#');
-      return `https://${this.docsHost}/${tag}/${parent}:${capitalize(species)}#${child}`;
+        // infer docsHost as "discordjs.dev/docs/packages"
+        return `https://${this.docsHost}/${tag}/${path}`;
+      },
+      rawDocsURL(this: Provider, tag: string, species: string, type: string) {
+        const [parent, child] = type.split('#');
+        return `https://${this.docsHost}/${tag}/${parent}:${capitalize(species)}#${child}`;
+      }
     }
   }
 
   static readonly dbotsSource = new Provider({
-    label: 'dbots.js',
-    docsHost: 'dbots.js.org',
-    repoLocation: 'dbots-pkg/dbots.js',
-    embedColor: 0xF5771F, // Orange
-    docsURL: this.sharedBuilders.slashCreate,
-    rawDocsURL: this.sharedBuilders.rawSlashCreate
-  });
+      label: 'dbots.js',
+      docsHost: 'dbots.js.org',
+      repoLocation: 'dbots-pkg/dbots.js',
+      embedColor: 0xF5771F, // Orange
+      ...this.sharedBuilders.slashCreate
+    });
 
-  static readonly dbotHookSource = new Provider({
-    label: 'dbothook.js',
-    docsHost: 'dbothook.js.org',
-    repoLocation: 'dbots-pkg/dbothook.js',
-    embedColor: 0xF5771F, // Orange
-    docsURL: this.sharedBuilders.slashCreate,
-    rawDocsURL: this.sharedBuilders.rawSlashCreate
-  });
+    static readonly dbotHookSource = new Provider({
+      label: 'dbothook.js',
+      docsHost: 'dbothook.js.org',
+      repoLocation: 'dbots-pkg/dbothook.js',
+      embedColor: 0xF5771F, // Orange
+      ...this.sharedBuilders.slashCreate
+    });
 
-  static readonly slashCreateSource = new Provider({
-    label: 'slash-create',
-    docsHost: 'slash-create.js.org',
-    repoLocation: 'Snazzah/slash-create',
-    embedColor: 0xF31231, // Crimson / Torch Red
-    docsURL: this.sharedBuilders.slashCreate,
-    rawDocsURL: this.sharedBuilders.rawSlashCreate
-  });
+    static readonly slashCreateSource = new Provider({
+      label: 'slash-create',
+      docsHost: 'slash-create.js.org',
+      repoLocation: 'Snazzah/slash-create',
+      embedColor: 0xF31231, // Crimson / Torch Red
+      ...this.sharedBuilders.slashCreate
+    });
 
-  static get all() {
-    return [
-      this.dbotsSource,
-      this.dbotHookSource,
-      this.slashCreateSource
-    ];
-  }
+    static get all() {
+      return [
+        this.dbotsSource,
+        this.dbotHookSource,
+        this.slashCreateSource
+      ];
+    }
 
   static get map() {
-    return new Map(this.all.map((provider) => [provider.label, provider]))
-  }
+      return new Map(this.all.map((provider) => [provider.label, provider]))
+    }
 
   static get(query: string): Provider | undefined {
-    return this.map.get(query);
+      return this.map.get(query);
+    }
   }
-}
 
 export default {
   dbots: Provider.dbotsSource,
