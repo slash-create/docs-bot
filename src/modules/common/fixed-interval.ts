@@ -23,6 +23,7 @@ export class FixedInterval {
   }
 
   run() {
+    if (this.#ref) clearTimeout(this.#ref);
     this.#ref = setTimeout(() => {
       if (!this.#isFirstCall || this.shortCall) this.callback(this.#count++);
       this.#isFirstCall &&= false;
