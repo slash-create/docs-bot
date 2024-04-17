@@ -15,6 +15,9 @@
     },
     "DISCORD_BOT_TOKEN": {
       "description": "The bot token of the Discord app"
+    },
+    "GITHUB_TOKEN": {
+      "description": "The token to access the GitHub API with increased tolorance for ratelimits."
     }
   },
   "keywords": ["node", "fastify", "discord", "interactions"]
