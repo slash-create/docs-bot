@@ -53,7 +53,7 @@ export default class DocumentationCommand extends SlashCommand {
   }
 
   async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[] | void> {
-    const { subCommands: [command], options, focused, focusedOption } = getCommandInfo(ctx);
+    const { options, focused, focusedOption } = getCommandInfo(ctx);
 
     if (!options.library && focused !== 'library') return [responses.select];
 
@@ -154,7 +154,7 @@ export default class DocumentationCommand extends SlashCommand {
     if (descriptor.parent) fragments.unshift(descriptor.parent.name);
 
     if (descriptor.species === 'class' || descriptor.species === 'typedef') {
-      embed.fields = this.getClassEntityFields(descriptor, descriptor.species === 'class');
+      embed.fields = this.getClassEntityFields(descriptor);
 
       if (descriptor.species === 'class' && descriptor.extends)
         embed.title += ` extends \`${descriptor.extends}\``;
@@ -199,7 +199,7 @@ export default class DocumentationCommand extends SlashCommand {
         value: this.resolveType(navigator, descriptor.type)
       });
 
-    if ('params' in descriptor) embed.fields.push(...this.getArgumentEntityFields(navigator, descriptor));
+    if ('params' in descriptor) embed.fields.push(...this.getArgumentEntityFields(descriptor));
 
     if ('returns' in descriptor)
       embed.fields.push({
@@ -234,7 +234,7 @@ export default class DocumentationCommand extends SlashCommand {
       }
     ];
 
-  private getArgumentEntityFields = (navigator: TypeNavigator, argument: AnyCallableDescriptor): EmbedField[] => {
+  private getArgumentEntityFields = (argument: AnyCallableDescriptor): EmbedField[] => {
     const { params } = argument;
 
     if (!params.length) return [];
@@ -242,14 +242,14 @@ export default class DocumentationCommand extends SlashCommand {
     return params.map((argument, index) => ({
       name: index === 0 ? 'Arguments' : '\u200b',
       value: [
-        `\`${argument.name}\` - ${this.resolveType(navigator, argument.type)} ${argument.default ? `= ${argument.default}` : ''
+        `\`${argument.name}\` - ${this.resolveType(argument.navigator, argument.type)} ${argument.default ? `= ${argument.default}` : ''
           }`.trim(),
-        'description' in argument ? this.parseDocString(navigator, argument.description) : ''
+        'description' in argument ? this.parseDocString(argument.navigator, argument.description) : ''
       ].join('\n')
     }));
   };
 
-  private getClassEntityFields = (parent: AnyStructureDescriptor, isClass: boolean): EmbedField[] =>
+  private getClassEntityFields = (parent: AnyStructureDescriptor): EmbedField[] =>
     [
       // ...('construct' in classEntry && this.getArgumentEntityFields(classEntry.construct, 'constructor')),
       'props' in parent && {
@@ -293,13 +293,13 @@ export default class DocumentationCommand extends SlashCommand {
       .flat(2)
       .map((fragment) => {
         if (navigator.map.has(fragment))
-            return `[${fragment}](${navigator.aggregator.provider.rawDocsURL(navigator.tag, 'typedef', fragment)})`;
+          return `[${fragment}](${navigator.aggregator.provider.rawDocsURL(navigator.tag, 'typedef', fragment)})`;
         else if (fragment in standardObjects) return `[${fragment}](${BASE_MDN_URL}/${standardObjects[fragment]})`;
         return fragment;
       })
       .join('')
       .replace(/(<|>)/g, (brace) => `\\${brace}`);
-    }
+  }
 }
 
 interface DocSearchOptions {
