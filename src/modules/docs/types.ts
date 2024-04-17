@@ -66,7 +66,7 @@ export interface DocumentationMeta {
 
 export interface BaseDescriptor<Species, Parent = undefined> {
   name: string;
-  meta: DocumentationFile;
+  meta: DocumentationFile | { toString(): string };
 
   is(query: string | Species): query is Species;
   toString(): string;
@@ -118,7 +118,7 @@ export interface MemberDescriptor extends BaseDescriptor<'member', AnyStructureD
   type?: TypeString;
 }
 
-export interface ParameterDescriptor extends BaseDescriptor<never, AnyCallableDescriptor> {
+export interface ParameterDescriptor extends BaseDescriptor<'param', AnyCallableDescriptor> {
   default?: string;
   description?: string;
   optional: string;

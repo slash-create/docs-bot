@@ -1,5 +1,5 @@
 import type { TypeNavigator } from './navigator';
-import type { AnyChildDescriptor, AnyDescriptor, AnyStructureDescriptor, DocumentationFile } from './types';
+import type { AnyChildDescriptor, AnyDescriptor, AnyStructureDescriptor, DocumentationFile, ParameterDescriptor } from './types';
 
 export function getSymbol(type: string) {
   switch (type.toLowerCase()) {
@@ -36,8 +36,22 @@ export function defineCommon(
 
   const focus = child ?? parent;
 
-  Reflect.set(focus, 'toString', function (this: AnyDescriptor) {
-    return ('parent' in this ? this.parent.name + symbol : '') + this.name;
+  Object.assign(focus, {
+    toString() {
+      return ('parent' in this ? this.parent.name + symbol : '') + this.name;
+    },
+    get [Symbol.species]() {
+      return type;
+    },
+    get species() {
+      return type;
+    },
+    get navigator() {
+      return navigator;
+    },
+    is(this: AnyDescriptor, query: string) {
+      return this.species === query;
+    }
   });
 
   if (focus.meta) {
@@ -52,23 +66,27 @@ export function defineCommon(
     });
   }
 
-  Reflect.set(focus, Symbol.species, type);
-
-  Reflect.defineProperty(focus, 'navigator', {
-    get(this: AnyDescriptor) {
-      return navigator;
-    }
-  });
-
-  Reflect.defineProperty(focus, 'species', {
-    get(this: AnyDescriptor) {
-      return this[Symbol.species];
-    }
-  });
-
-  Reflect.set(focus, 'is', function (this: AnyDescriptor, ...query: string[]) {
-    return query.includes(this.species);
-  });
+  if ('params' in focus) {
+    focus.params.forEach((param, index) => {
+      Object.assign(param, {
+        toString(this: ParameterDescriptor) {
+          return this.parent.parent.name + symbol + this.parent.name + `([${index}]${this.name})`;
+        },
+        get [Symbol.species]() {
+          return 'param';
+        },
+        get species() {
+          return 'param';
+        },
+        is(this: ParameterDescriptor, query: string) {
+          return this.species === query;
+        },
+        get navigator() {
+          return navigator;
+        }
+      });
+    })
+  }
 
   return focus;
 }

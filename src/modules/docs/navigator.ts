@@ -143,7 +143,8 @@ export class TypeNavigator {
     defineCommon(this, descriptorType, descriptor);
 
     this.map.set(descriptor.toString(), descriptor);
-    this.#registerKnownFile([descriptor.meta.path, descriptor.meta.file]);
+    if ('path' in descriptor.meta)
+      this.#registerKnownFile([descriptor.meta.path, descriptor.meta.file]);
 
     const pairs = {
       Event: 'events',
@@ -159,15 +160,15 @@ export class TypeNavigator {
           defineCommon(this, species, descriptor, entry, symbol);
 
           this.map.set(entry.toString(), entry);
-          if (entry.meta)
+          if (entry.meta && 'path' in entry.meta)
             this.#registerKnownFile([entry.meta.path, entry.meta.file]);
         }
       }
     }
   }
 
-  #registerKnownFile(path: string | string[]) {
-    const [filePath] = (Array.isArray(path) ? path.join('/') : path).split('#');
+  #registerKnownFile(pathOrMeta: string | string[]) {
+    const [filePath] = (Array.isArray(pathOrMeta) ? pathOrMeta.join('/') : pathOrMeta).split('#');
     if (!filePath.startsWith('src')) return;
     if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
   }
