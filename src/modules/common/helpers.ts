@@ -43,3 +43,15 @@ export function trimContent(strings: TemplateStringsArray, ...args: string[]) {
 export function numLength(num: number) {
 	return Math.ceil(Math.log10(num + 1));
 }
+
+// https://stackoverflow.com/a/63671527
+export function groupBy<Key extends PropertyKey, Value>(list: Value[], groupPredicate: (value: Value) => Key): Partial<Record<Key, Value[]>> {
+  return list.reduce((acc, value) => {
+    const key = groupPredicate(value);
+
+    acc[key] ??= [];
+    acc[key].push(value);
+
+    return acc;
+  }, {} as Partial<Record<Key, Value[]>>)
+}
