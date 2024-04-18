@@ -140,7 +140,7 @@ export default class DocumentationCommand extends SlashCommand {
 	): Promise<MessageOptions | string> {
 		const provider = Provider.get(options.library);
 
-		if (!provider) return responses.unknown.name;
+		if (!provider) return _(responses.unknown.name);
 		if (!provider.aggregator.ready) {
 			await ctx.defer(!options.share);
 			await provider.aggregator.onReady;
@@ -149,6 +149,7 @@ export default class DocumentationCommand extends SlashCommand {
 		const typeNavigator = provider.aggregator.getTag(
 			options.version ?? "latest",
 		);
+    if (!typeNavigator) return _(responses.unknown.name);
 		if (!typeNavigator.ready) {
 			await ctx.defer(!options.share);
 			await typeNavigator.onReady;

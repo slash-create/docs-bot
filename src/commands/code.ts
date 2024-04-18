@@ -177,11 +177,12 @@ export default class CodeCommand extends SlashCommand {
 		const { library, version = "latest" } = options;
 
 		const provider = Provider.get(library);
-		if (!provider) return responses.unknown.name;
-		if (!provider.aggregator.ready) return responses.loading.name;
+		if (!provider) return _(responses.unknown.name);
+		if (!provider.aggregator.ready) return _(responses.loading.name);
 
 		const typeNavigator = provider.aggregator.getTag(version);
-		if (!typeNavigator.ready) return responses.loading.name;
+    if (!typeNavigator) return _(responses.unknown.name);
+		if (!typeNavigator.ready) return _( responses.loading.name);
 
 		const shouldHaveLineNumbers = options.line_numbers ?? false;
 
@@ -222,7 +223,7 @@ export default class CodeCommand extends SlashCommand {
 		}
 
 		const res = await typeNavigator.aggregator.provider.fetchGitHubRaw(
-			`${typeNavigator.baseRepoURL()}/${options.version}/${file}`,
+			`${typeNavigator.baseRepoURL()}/${file}`,
 		);
 		const body = await res.text();
 		const lines = body.split("\n");
