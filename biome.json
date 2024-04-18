@@ -21,7 +21,11 @@
     ],
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+
+      "style": {
+        "noParameterAssign": "off"
+      }
 		}
 	}
 }

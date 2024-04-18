@@ -39,6 +39,7 @@ export class Provider implements ProviderOptions {
 	}
 
 	baseRepoURL(ref = "master", view: GitHubViewMode = "tree") {
+    if (ref === 'latest') ref = this.aggregator.latestRelease;
 		return `${GITHUB_WEB_URL}/${this.repoLocation}/${view}/${ref}`;
 	}
 
@@ -47,6 +48,7 @@ export class Provider implements ProviderOptions {
 	}
 
 	baseRawURL(ref = "master") {
+    if (ref === 'latest') ref = this.aggregator.latestRelease;
 		return `${GITHUB_RAW_URL}/${this.repoLocation}/${ref}`;
 	}
 

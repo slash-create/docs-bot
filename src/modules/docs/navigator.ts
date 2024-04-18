@@ -89,9 +89,7 @@ export class TypeNavigator {
 			.map((n) => `L${n}`)
 			.join("-");
 
-    const ref = this.tag === 'latest' ? this.aggregator.latestRelease : this.tag;
-
-		return `${this.baseRepoURL("blob")}/${ref}/${file}#${lineString}`;
+		return `${this.baseRepoURL("blob")}/${file}#${lineString}`;
 	}
 
 	docsURL(descriptor: AnyDescriptor) {
