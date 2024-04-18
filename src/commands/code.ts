@@ -1,268 +1,380 @@
-import { filter as fuzzyFilter } from 'fuzzy';
+import { filter, filter as fuzzyFilter } from "fuzzy";
 
 import {
-  AnyComponentButton,
-  AutocompleteChoice,
-  AutocompleteContext,
-  ButtonStyle,
-  CommandContext,
-  CommandOptionType,
-  ComponentType,
-  MessageOptions,
-  SlashCommand,
-  SlashCreator
-} from 'slash-create';
+	type AnyComponentButton,
+	type AutocompleteChoice,
+	type AutocompleteContext,
+	ButtonStyle,
+	type CommandContext,
+	CommandOptionType,
+	ComponentType,
+	type MessageOptions,
+	SlashCommand,
+	type SlashCreator,
+} from "slash-create";
 
-import { component as deleteComponent } from '../components/delete-repsonse';
-import { lineNumbersOption, queryOption, shareOption } from '../util/commandOptions';
-import fileCache from '../util/fileCache';
-import { buildGitHubLink } from '../util/linkBuilder';
-import TypeNavigator from '../util/typeNavigator';
-import { ephemeralResponse as _, numLength, trimContent } from '../util/common';
+import {
+	ephemeralResponse as _,
+	numLength,
+	trimContent,
+} from "&common/helpers";
+import {
+	libraryOption,
+	lineNumbersOption,
+	queryOption,
+	shareOption,
+	versionOption,
+} from "&discord/command-options";
+import { getCommandInfo } from "&discord/helpers";
+import * as responses from "&discord/responses";
+
+import { component as deleteComponent } from "../components/delete-repsonse";
+import { Provider } from "&docs/source";
+import { VERSION_REGEX } from "&docs/constants";
+import type { DocumentationFile } from "&docs/types";
 
 export default class CodeCommand extends SlashCommand {
-  constructor(creator: SlashCreator) {
-    super(creator, {
-      name: 'code',
-      description: 'Get a section of code from the source repository.',
-      options: [
-        {
-          name: 'entity',
-          description: 'Fetch a file from a type entity.',
-          type: CommandOptionType.SUB_COMMAND,
-          options: [
-            queryOption,
-            {
-              name: 'around',
-              description: 'How many lines to retrieve around the entity. (default = 3)',
-              min_value: 1,
-              type: CommandOptionType.INTEGER
-            },
-            {
-              name: 'offset',
-              description: 'Offset the selection view.',
-              type: CommandOptionType.INTEGER,
-              required: false
-            },
-            shareOption,
-            lineNumbersOption
-          ]
-        },
-        {
-          name: 'lines',
-          description: 'Fetch specific lines from the source code.',
-          type: CommandOptionType.SUB_COMMAND,
-          options: [
-            queryOption,
-            {
-              name: 'start',
-              description: 'Where to select from.',
-              type: CommandOptionType.INTEGER,
-              min_value: 1,
-              required: true
-            },
-            {
-              name: 'end',
-              description: 'Where to select to.',
-              type: CommandOptionType.INTEGER,
-              min_value: 1,
-              required: true
-            },
-            shareOption,
-            lineNumbersOption
-          ]
-        }
-      ]
-    });
-  }
+	constructor(creator: SlashCreator) {
+		super(creator, {
+			name: "code",
+			description: "Get a section of code from the source repository.",
+			options: [
+				{
+					name: "entity",
+					description: "Fetch a file from a type entity.",
+					type: CommandOptionType.SUB_COMMAND,
+					options: [
+						libraryOption,
+						queryOption,
+						{
+							name: "around",
+							description:
+								"How many lines to retrieve around the entity. (default = 3)",
+							min_value: 1,
+							type: CommandOptionType.INTEGER,
+						},
+						{
+							name: "offset",
+							description: "Offset the selection view.",
+							type: CommandOptionType.INTEGER,
+							required: false,
+						},
+						versionOption,
+						shareOption,
+						lineNumbersOption,
+					],
+				},
+				{
+					name: "lines",
+					description: "Fetch specific lines from the source code.",
+					type: CommandOptionType.SUB_COMMAND,
+					options: [
+						libraryOption,
+						queryOption,
+						{
+							name: "start",
+							description: "Where to select from.",
+							type: CommandOptionType.INTEGER,
+							min_value: 1,
+							required: true,
+						},
+						{
+							name: "end",
+							description: "Where to select to.",
+							type: CommandOptionType.INTEGER,
+							min_value: 1,
+							required: true,
+						},
+						versionOption,
+						shareOption,
+						lineNumbersOption,
+					],
+				},
+			],
+		});
+	}
 
-  autocomplete = async ({ options, subcommands }: AutocompleteContext): Promise<AutocompleteChoice[]> =>
-    (subcommands[0] === 'entity'
-      ? TypeNavigator.fuzzyFilter(options.entity.query as string) ||
-        Object.keys(TypeNavigator.typeMap.all).map((string) => ({ string, score: 0 }))
-      : fuzzyFilter(options.lines.query, TypeNavigator.knownFiles) ||
-        TypeNavigator.knownFiles.map((string) => ({ string, score: 0 }))
-    )
-      .map<AutocompleteChoice>((entry) => ({
-        name: `${entry.string} ${entry.score ? `{score: ${entry.score}}` : ''}`.trim(),
-        value: entry.string
-      }))
-      .slice(0, 25);
+	async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
+		const {
+			subCommands: [command],
+			focused,
+			focusedOption,
+			options,
+		} = getCommandInfo(ctx);
 
-  async run(ctx: CommandContext): Promise<MessageOptions | void | string> {
-    const subCommand = ctx.subcommands[0];
-    const options = ctx.options[subCommand];
+		if (!options.library && ctx.focused !== "library")
+			return [responses.select];
 
-    const shouldHaveLineNumbers = options.line_numbers ?? false;
+		switch (focused) {
+			case "library": {
+				return Provider.filter(options.library).map((result) => ({
+					name: `${result.original.label} (${result.original.docsHost})`,
+					value: result.string,
+				}));
+			}
+			case "version": {
+				const provider = Provider.get(focusedOption.split("(")[0].trim());
 
-    let file: string = null,
-      startLine = 0,
-      endLine = Infinity;
+				if (!provider) return [responses.unknown];
+				if (!provider.aggregator.ready) return [responses.loading];
 
-    switch (subCommand) {
-      case 'entity': {
-        const { query, around = 3, offset = 0 } = options;
+				return provider.aggregator.filter(focusedOption).map((value) => {
+					let tagString: string;
 
-        if (!(query in TypeNavigator.typeMap.all)) return _(`Entity \`${query}\` was not found in type map.`);
+					if (VERSION_REGEX.test(value.string)) tagString = "Release";
+					else if (value.string === "master") tagString = "Upstream";
+					else if (value.string !== "latest") tagString = "Branch";
+					else tagString = provider.aggregator.latestRelease;
 
-        const { meta } = TypeNavigator.findFirstMatch(query);
+					return {
+						name: `${value.string} (${tagString})`,
+						value: value.string,
+					};
+				});
+			}
+			case "query": {
+				const { library, version = "latest" } = options;
 
-        startLine = meta.line - around + offset;
-        endLine = meta.line + around + offset;
-        file = `${meta.path}/${meta.file}`;
+				const provider = Provider.get(library.split("(")[0].trim());
 
-        break;
-      }
+				if (!provider) return [responses.unknown];
+				if (!provider.aggregator.ready) return [responses.loading];
 
-      case 'lines': {
-        let { query, start, end } = options;
+				const typeNavigator = provider.aggregator.getTag(version);
 
-        if (!TypeNavigator.knownFiles.includes(query)) return _(`Could not find ${query} in known files.`);
+				if (!typeNavigator.ready) return [responses.loading];
 
-        if (end < start) [start, end] = [end, start]; // swap if inverted
+				return typeNavigator[
+					command === "entity" ? "filterEntity" : "filterFile"
+				](focused).map((value) => {
+					return {
+						name: `${value.string} (🧮 ${value.score})`,
+						value: value.string,
+					};
+				});
+			}
+		}
+	}
 
-        startLine = start;
-        endLine = end;
-        file = query;
+	async run(ctx: CommandContext): Promise<MessageOptions | string> {
+		const {
+			subCommands: [subCommand],
+			options,
+		} = getCommandInfo(ctx);
 
-        break;
-      }
-    }
+		const { library, version = "latest" } = options;
 
-    const { body } = await fileCache.fetch(file, 'master');
-    const lines = body.split('\n');
+		const provider = Provider.get(library);
+		if (!provider) return responses.unknown.name;
+		if (!provider.aggregator.ready) return responses.loading.name;
 
-    if (startLine > lines.length) {
-      return _(trimContent`
-          **Failover:** Line selection out of bounds.
-          > Start Line: \`${startLine + 1}\`
-          > Total Lines: \`${lines.length}\``);
-    }
+		const typeNavigator = provider.aggregator.getTag(version);
+		if (!typeNavigator.ready) return responses.loading.name;
 
-    const amendNotes = new Set<string>();
+		const shouldHaveLineNumbers = options.line_numbers ?? false;
 
-    let actualStart = startLine;
-    let actualEnd = endLine;
+		let file: string = null;
+		let startLine = 0;
+		let endLine = Number.POSITIVE_INFINITY;
 
-    if (actualEnd > lines.length) {
-      actualStart -= actualEnd - actualStart;
-      actualEnd = lines.length;
-    }
+		switch (subCommand) {
+			case "entity": {
+				const { query, around = 3, offset = 0 } = options;
 
-    if (actualStart <= 1) actualStart = 1;
+				if (!typeNavigator.map.has(query))
+					return _(`Entity \`${query}\` was not found in type map.`);
 
-    if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
-    if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
+				const meta = typeNavigator.get(query).meta as DocumentationFile;
 
-    let commentOpen = false;
+				startLine = meta.line - around + offset;
+				endLine = meta.line + around + offset;
+				file = `${meta.path}/${meta.file}`;
 
-    for (let head = actualStart - 2; head >= 0; head--) {
-      // Comment was opened before the initial head of the selection
-      if (lines[head].indexOf('*/')) {
-        commentOpen = true;
-        break;
-      }
-    }
+				break;
+			}
 
-    const lineSelection = lines.slice(actualStart - 1, actualEnd);
+			case "lines": {
+				let { query, start, end } = options;
 
-    for (const [index, line] of lineSelection.entries()) {
-      if (line.indexOf('/*') >= 0) commentOpen = true;
-      // if (line.indexOf('*/') >= 0) commentOpen = false;
+				if (!typeNavigator.knownFiles.includes(query))
+					return _(`Could not find ${query} in known files.`);
 
-      if (!(commentOpen || shouldHaveLineNumbers)) continue;
-      commentOpen = false;
+				if (end < start) [start, end] = [end, start]; // swap if inverted
 
-      const processedLine = line.replace(/^( {2,}) \*/gm, '$1/*');
+				startLine = start;
+				endLine = end;
+				file = query;
 
-      if (processedLine === lineSelection[index]) continue;
+				break;
+			}
+		}
 
-      lineSelection[index] = processedLine;
-      amendNotes.add('A comment block was altered for formatting purposes.');
-    }
+		const res = await typeNavigator.aggregator.provider.fetchGitHubAPI(
+			`${typeNavigator.baseRepoURL()}/${options.version}/${file}`,
+		);
+		const body = await res.text();
+		const lines = body.split("\n");
 
-    // if (commentOpen) {
-    //   amendNotes.add('A comment block remains open.');
-    // }
+		if (startLine > lines.length) {
+			return _(
+				[
+					"**Failover:** Line selection out of bounds.",
+					`> Start Line: \`${startLine + 1}\``,
+					`> Total Lines: \`${lines.length}\``,
+				].join("\n"),
+			);
+		}
 
-    let content = [
-      this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]),
-      [...amendNotes].map((note) => `> ${note}`),
-      '```ts',
-      lineSelection.map((line, index) =>
-        this.generateCodeLine(line, actualStart + index, actualEnd, shouldHaveLineNumbers)
-      ),
-      '```'
-    ]
-      .flat()
-      .join('\n');
+		const amendNotes = new Set<string>();
 
-    // #region content trim loop
-    let trimTopThisTime = false;
-    let notesCount = amendNotes.size;
-    while (content.length > 2000) {
-      amendNotes.add('Requested content was trimmed.');
-      const lines = content.split('\n');
+		let actualStart = startLine;
+		let actualEnd = endLine;
 
-      // #region trim location
-      if (subCommand === 'entity' && trimTopThisTime) {
-        lines.splice(notesCount + 2, 1);
-        actualStart++;
-      } else {
-        lines.splice(-2, 1);
-        actualEnd--;
-      }
-      trimTopThisTime = !trimTopThisTime;
-      // #endregion
+		if (actualEnd > lines.length) {
+			actualStart -= actualEnd - actualStart;
+			actualEnd = lines.length;
+		}
 
-      // #region notes re-injection
-      if (amendNotes.size !== notesCount) {
-        const notesLines = [...amendNotes].map((note) => `> ${note}`);
-        lines.splice(1, notesCount, ...notesLines);
-        notesCount = amendNotes.size;
-      }
-      // #endregion
+		if (actualStart <= 1) actualStart = 1;
 
-      lines[0] = this.generateContentHeader(file, [startLine, actualStart], [endLine, actualEnd]);
-      content = lines.join('\n');
-    }
-    // #endregion
+		if (`${lines[actualStart - 1]}`.trim().length <= 0) actualStart++;
+		if (`${lines[actualEnd - 1]}`.trim().length <= 0) actualEnd--;
 
-    const components: AnyComponentButton[] = [
-      {
-        type: ComponentType.BUTTON,
-        style: ButtonStyle.LINK,
-        url: buildGitHubLink(file, [actualStart, actualEnd]),
-        label: 'Open GitHub',
-        emoji: {
-          name: '📂'
-        }
-      }
-    ];
+		let commentOpen = false;
 
-    if (options.share) components.unshift(deleteComponent);
+		for (let head = actualStart - 2; head >= 0; head--) {
+			// Comment was opened before the initial head of the selection
+			if (lines[head].indexOf("*/")) {
+				commentOpen = true;
+				break;
+			}
+		}
 
-    return {
-      content,
-      ephemeral: !options.share,
-      components: [
-        {
-          type: ComponentType.ACTION_ROW,
-          components
-        }
-      ]
-    };
-  }
+		const lineSelection = lines.slice(actualStart - 1, actualEnd);
 
-  private generateCodeLine = (line: string, index: number, lastLine: number, includeNumbers: boolean) =>
-    (includeNumbers ? `/* ${`${index}`.padStart(numLength(lastLine), ' ')} */ ` : '') + line;
+		for (const [index, line] of lineSelection.entries()) {
+			if (line.indexOf("/*") >= 0) commentOpen = true;
+			// if (line.indexOf('*/') >= 0) commentOpen = false;
 
-  private generateContentHeader = (
-    file: string,
-    [start, actualStart]: [number, number],
-    [end, actualEnd]: [number, number]
-  ) => `\`${file}\` - Lines ${this.getAdjustment(start, actualStart)} to ${this.getAdjustment(end, actualEnd)}`;
+			if (!(commentOpen || shouldHaveLineNumbers)) continue;
+			commentOpen = false;
 
-  private getAdjustment = (original: number, actual?: number) =>
-    !actual || original === actual ? `\`${original}\`` : `~~\`${original}\`~~ \`${actual}\``;
+			const processedLine = line.replace(/^( {2,}) \*/gm, "$1/*");
+
+			if (processedLine === lineSelection[index]) continue;
+
+			lineSelection[index] = processedLine;
+			amendNotes.add("A comment block was altered for formatting purposes.");
+		}
+
+		// if (commentOpen) {
+		//   amendNotes.add('A comment block remains open.');
+		// }
+
+		let content = [
+			this.generateContentHeader(
+				file,
+				[startLine, actualStart],
+				[endLine, actualEnd],
+			),
+			[...amendNotes].map((note) => `> ${note}`),
+			"```ts",
+			lineSelection.map((line, index) =>
+				this.generateCodeLine(
+					line,
+					actualStart + index,
+					actualEnd,
+					shouldHaveLineNumbers,
+				),
+			),
+			"```",
+		]
+			.flat()
+			.join("\n");
+
+		// #region content trim loop
+		let trimTopThisTime = false;
+		let notesCount = amendNotes.size;
+		while (content.length > 2000) {
+			amendNotes.add("Requested content was trimmed.");
+			const lines = content.split("\n");
+
+			// #region trim location
+			if (subCommand === "entity" && trimTopThisTime) {
+				lines.splice(notesCount + 2, 1);
+				actualStart++;
+			} else {
+				lines.splice(-2, 1);
+				actualEnd--;
+			}
+			trimTopThisTime = !trimTopThisTime;
+			// #endregion
+
+			// #region notes re-injection
+			if (amendNotes.size !== notesCount) {
+				const notesLines = [...amendNotes].map((note) => `> ${note}`);
+				lines.splice(1, notesCount, ...notesLines);
+				notesCount = amendNotes.size;
+			}
+			// #endregion
+
+			lines[0] = this.generateContentHeader(
+				file,
+				[startLine, actualStart],
+				[endLine, actualEnd],
+			);
+			content = lines.join("\n");
+		}
+		// #endregion
+
+		const components: AnyComponentButton[] = [
+			{
+				type: ComponentType.BUTTON,
+				style: ButtonStyle.LINK,
+				url: typeNavigator.codeFileURL(version, file, [actualStart, actualEnd]),
+				label: "Open GitHub",
+				emoji: {
+					name: "📂",
+				},
+			},
+		];
+
+		if (options.share) components.unshift(deleteComponent);
+
+		return {
+			content,
+			ephemeral: !options.share,
+			components: [
+				{
+					type: ComponentType.ACTION_ROW,
+					components,
+				},
+			],
+		};
+	}
+
+	private generateCodeLine = (
+		line: string,
+		index: number,
+		lastLine: number,
+		includeNumbers: boolean,
+	) =>
+		(includeNumbers
+			? `/* ${`${index}`.padStart(numLength(lastLine), " ")} */ `
+			: "") + line;
+
+	private generateContentHeader = (
+		file: string,
+		[start, actualStart]: [number, number],
+		[end, actualEnd]: [number, number],
+	) =>
+		`\`${file}\` - Lines ${this.getAdjustment(
+			start,
+			actualStart,
+		)} to ${this.getAdjustment(end, actualEnd)}`;
+
+	private getAdjustment = (original: number, actual?: number) =>
+		!actual || original === actual
+			? `\`${original}\``
+			: `~~\`${original}\`~~ \`${actual}\``;
 }

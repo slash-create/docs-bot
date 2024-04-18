@@ -4,14 +4,17 @@
     "esModuleInterop": true,
     "declaration": true,
     "noErrorTruncation": true,
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "target": "ESNext",
     "outDir": "dist",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "typeRoots": ["./node_modules/@types", "types"],
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "&*": ["./src/modules/*"]
+    }
   },
   "include": [
     "./src/**/*"
