@@ -1,16 +1,20 @@
-import { performance } from 'perf_hooks';
+import { performance } from "perf_hooks";
 
-import { measure } from '&measures/convert';
+import { measure } from "&measures/convert";
 
 export function duration() {
-  const then = performance.now();
+	const then = performance.now();
 
-  return function () {
-    const difference = performance.now() - then;
-    const result = measure(difference).from('ms').toBest();
-    const valueString = offsetReplace(result.val.toPrecision(8), ['0', '.'], '.').padStart(9, ' ');
-    return `${valueString} ${result.unit}`;
-  };
+	return () => {
+		const difference = performance.now() - then;
+		const result = measure(difference).from("ms").toBest();
+		const valueString = offsetReplace(
+			result.val.toPrecision(8),
+			["0", "."],
+			".",
+		).padStart(9, " ");
+		return `${valueString} ${result.unit}`;
+	};
 }
 
 /**
@@ -22,20 +26,24 @@ export function duration() {
  * @description
  * `startAt` could be included
  */
-export function offsetReplace(text: string, charSet: string[], stopAtChar?: string) {
-  let count = 0;
+export function offsetReplace(
+	text: string,
+	charSet: string[],
+	stopAtChar?: string,
+) {
+	let count = 0;
 
-  for (let i = text.length - 1; i >= 0; i--) {
-    const char = text.at(i);
+	for (let i = text.length - 1; i >= 0; i--) {
+		const char = text.at(i);
 
-    if (!charSet.includes(char)) break;
+		if (!charSet.includes(char)) break;
 
-    count++;
+		count++;
 
-    if (stopAtChar && char === stopAtChar) break;
-  }
+		if (stopAtChar && char === stopAtChar) break;
+	}
 
-  if (count === 0) return text;
+	if (count === 0) return text;
 
-  return text.substring(0, text.length - count);
+	return text.substring(0, text.length - count);
 }
