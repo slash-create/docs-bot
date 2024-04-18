@@ -344,7 +344,7 @@ export default class CodeCommand extends SlashCommand {
 			{
 				type: ComponentType.BUTTON,
 				style: ButtonStyle.LINK,
-				url: typeNavigator.codeFileURL(file, [actualStart, actualEnd]),
+				url: typeNavigator.baseRawURL(file, [actualStart, actualEnd]),
 				label: "Open GitHub",
 				emoji: {
 					name: "📂",

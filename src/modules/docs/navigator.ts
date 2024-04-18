@@ -83,13 +83,13 @@ export class TypeNavigator {
 		return this.aggregator.provider.baseRepoURL(this.tag, view);
 	}
 
-	codeFileURL(file: string, lineRange: [number, number?]) {
+	baseRawURL(file: string, lineRange: [number, number?]) {
 		const lineString = lineRange
 			.filter(Boolean)
 			.map((n) => `L${n}`)
 			.join("-");
 
-		return `${this.baseRepoURL("blob")}/${file}#${lineString}`;
+		return `${this.aggregator.provider.baseRawURL(this.tag)}/${file}#${lineString}`;
 	}
 
 	docsURL(descriptor: AnyDescriptor) {
