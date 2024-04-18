@@ -41,7 +41,7 @@ export class Provider implements ProviderOptions {
   }
 
   fetchGitHubAPI(endpoint: string, method: string = 'GET'): Promise<Response> {
-    return fetch(endpoint, {
+    return fetch(new URL(endpoint, GITHUB_API_URL), {
       method,
       ...(process.env.GITHUB_API_TOKEN && {
         headers: {
