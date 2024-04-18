@@ -133,9 +133,10 @@ export default class VersionAggregator {
       `[${this.provider.docsHost}] Loaded ${this.#branches.length} branches & ${this.#releases.length} releases`,
     );
 
+    this.#ready = true;
+
     await this.getTag(this.latestRelease).onReady;
 
-    this.#ready = true;
     this.#deferred.resolve();
   }
 
