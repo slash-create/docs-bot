@@ -21,6 +21,7 @@ import * as responses from '&discord/responses';
 import { component as deleteComponent } from '../components/delete-repsonse';
 import { Provider } from '&docs/source';
 import { VERSION_REGEX } from '&docs/constants';
+import { DocumentationFile } from '&docs/types';
 
 export default class CodeCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -152,7 +153,7 @@ export default class CodeCommand extends SlashCommand {
 
         if (!typeNavigator.map.has(query)) return _(`Entity \`${query}\` was not found in type map.`);
 
-        const { meta } = typeNavigator.get(query);
+        const meta = typeNavigator.get(query).meta as DocumentationFile;
 
         startLine = meta.line - around + offset;
         endLine = meta.line + around + offset;
