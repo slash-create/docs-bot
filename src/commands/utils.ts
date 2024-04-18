@@ -24,65 +24,65 @@
  */
 
 import {
-	type AutocompleteChoice,
-	type AutocompleteContext,
-	type CommandContext,
-	CommandOptionType,
-	SlashCommand,
-	type SlashCreator,
+  type AutocompleteChoice,
+  type AutocompleteContext,
+  type CommandContext,
+  CommandOptionType,
+  SlashCommand,
+  type SlashCreator,
   type MessageOptions,
 } from "slash-create";
 
 import { filter } from "fuzzy";
 
 import {
-	ephemeralResponse as _,
-	hashMapToString,
-	plural,
+  ephemeralResponse as _,
+  hashMapToString,
+  plural,
 } from "&common/helpers";
 import { command } from "&discord/markup";
 import { filtered, grouped, measure } from "&measures/convert";
 
 export default class UtilsCommand extends SlashCommand {
-	constructor(creator: SlashCreator) {
-		super(creator, {
-			name: "utils",
-			description: "Misc. stuff", // ~
-			deferEphemeral: true,
-			options: [
-				{
-					name: "convert",
-					type: CommandOptionType.SUB_COMMAND_GROUP,
-					description: "Convert units", // ~
-					options: filtered.map((unit) => ({
-						name: unit,
-						description: `Convert '${unit}' units`,
-						type: CommandOptionType.SUB_COMMAND,
-						options: [
-							{
-								name: "amount",
-								description: "The amount to convert.",
-								type: CommandOptionType.NUMBER,
-								required: true,
-							},
-							{
-								name: "from",
-								description: "The unit to convert from.",
-								type: CommandOptionType.STRING,
-								autocomplete: true,
-								required: true,
-							},
-							{
-								name: "to",
-								description: "The unit to convert to.",
-								type: CommandOptionType.STRING,
-								autocomplete: true,
-								required: true,
-							},
-						],
-					})),
-				},
-				/* ,
+  constructor(creator: SlashCreator) {
+    super(creator, {
+      name: "utils",
+      description: "Misc. stuff", // ~
+      deferEphemeral: true,
+      options: [
+        {
+          name: "convert",
+          type: CommandOptionType.SUB_COMMAND_GROUP,
+          description: "Convert units", // ~
+          options: filtered.map((unit) => ({
+            name: unit,
+            description: `Convert '${unit}' units`,
+            type: CommandOptionType.SUB_COMMAND,
+            options: [
+              {
+                name: "amount",
+                description: "The amount to convert.",
+                type: CommandOptionType.NUMBER,
+                required: true,
+              },
+              {
+                name: "from",
+                description: "The unit to convert from.",
+                type: CommandOptionType.STRING,
+                autocomplete: true,
+                required: true,
+              },
+              {
+                name: "to",
+                description: "The unit to convert to.",
+                type: CommandOptionType.STRING,
+                autocomplete: true,
+                required: true,
+              },
+            ],
+          })),
+        },
+        /* ,
         {
           name: 'string',
           description: 'stuffs...',
@@ -95,83 +95,83 @@ export default class UtilsCommand extends SlashCommand {
           // hash, caeser,
         }
         */
-			],
-		});
-	}
+      ],
+    });
+  }
 
-	async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
-		const [subGroup, subCommand] = ctx.subcommands;
-		const options = ctx.options[subGroup][subCommand];
+  async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
+    const [subGroup, subCommand] = ctx.subcommands;
+    const options = ctx.options[subGroup][subCommand];
 
-		let results: AutocompleteChoice[] = [];
+    let results: AutocompleteChoice[] = [];
 
-		// Exclude selection of origin unit
-		if (subGroup === "convert") {
-			switch (ctx.focused) {
-				case "from":
-				case "to": {
-					results = filter(options[ctx.focused], grouped[subCommand], {
-						extract: (input) =>
-							plural(options.amount, input.singular, input.plural, false),
-					}).map((result) => ({
-						name: `${result.string} [${result.original.abbr}]`,
-						value: result.original.abbr,
-					}));
-					break;
-				}
-			}
+    // Exclude selection of origin unit
+    if (subGroup === "convert") {
+      switch (ctx.focused) {
+        case "from":
+        case "to": {
+          results = filter(options[ctx.focused], grouped[subCommand], {
+            extract: (input) =>
+              plural(options.amount, input.singular, input.plural, false),
+          }).map((result) => ({
+            name: `${result.string} [${result.original.abbr}]`,
+            value: result.original.abbr,
+          }));
+          break;
+        }
+      }
 
-			if (ctx.focused === "to") {
-				const originIndex = results.findIndex(
-					(opt) => opt.value === options.from,
-				);
-				if (originIndex >= 0) results.splice(originIndex, 1);
+      if (ctx.focused === "to") {
+        const originIndex = results.findIndex(
+          (opt) => opt.value === options.from,
+        );
+        if (originIndex >= 0) results.splice(originIndex, 1);
 
-				const bestUnit = measure(options.amount).from(options.from).toBest();
-				const bestIndex = results.findIndex(
-					(opt) => opt.value === bestUnit.unit,
-				);
+        const bestUnit = measure(options.amount).from(options.from).toBest();
+        const bestIndex = results.findIndex(
+          (opt) => opt.value === bestUnit.unit,
+        );
 
-				if (bestIndex < 0) {
-					// erm... shit
-				} else if (bestIndex > 1) {
-					const [item] = results.splice(bestIndex, 1);
-					item.name += " { BEST }";
-					results.splice(1, 0, item);
-				} else {
-					results[bestIndex].name += " { BEST }";
-				}
-			}
-		}
+        if (bestIndex < 0) {
+          // erm... shit
+        } else if (bestIndex > 1) {
+          const [item] = results.splice(bestIndex, 1);
+          item.name += " { BEST }";
+          results.splice(1, 0, item);
+        } else {
+          results[bestIndex].name += " { BEST }";
+        }
+      }
+    }
 
-		return results;
-	}
+    return results;
+  }
 
-	async run(ctx: CommandContext): Promise<MessageOptions | string> {
-		const [subGroup, subCommand] = ctx.subcommands;
-		const options = ctx.options[subGroup][subCommand];
+  async run(ctx: CommandContext): Promise<MessageOptions | string> {
+    const [subGroup, subCommand] = ctx.subcommands;
+    const options = ctx.options[subGroup][subCommand];
 
-		if (subGroup === "convert") {
-			const { amount, from: origin, to: target } = options;
+    if (subGroup === "convert") {
+      const { amount, from: origin, to: target } = options;
 
-			const fromUnit = measure().describe(origin);
-			const toUnit = measure().describe(target);
+      const fromUnit = measure().describe(origin);
+      const toUnit = measure().describe(target);
 
-			const result = measure(options.amount).from(origin).to(target);
-			const commandMention = command(
-				[this.commandName, ...ctx.subcommands],
-				this.ids.get("global"),
-			);
-			const commandString = `/${this.commandName} ${ctx.subcommands.join(
-				" ",
-			)} ${hashMapToString(options, ": ", " ")}`;
+      const result = measure(options.amount).from(origin).to(target);
+      const commandMention = command(
+        [this.commandName, ...ctx.subcommands],
+        this.ids.get("global"),
+      );
+      const commandString = `/${this.commandName} ${ctx.subcommands.join(
+        " ",
+      )} ${hashMapToString(options, ": ", " ")}`;
 
-			return _(
-				[
-					`${amount} ${fromUnit.abbr} -> ${result} ${toUnit.abbr}`,
-					`${commandMention} - \`/${commandString}\``,
-				].join("\n"),
-			);
-		}
-	}
+      return _(
+        [
+          `${amount} ${fromUnit.abbr} -> ${result} ${toUnit.abbr}`,
+          `${commandMention} - \`/${commandString}\``,
+        ].join("\n"),
+      );
+    }
+  }
 }

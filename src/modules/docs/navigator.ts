@@ -14,181 +14,185 @@ import { TIME } from "&common/constants";
 import { FixedInterval } from "&common/fixed-interval";
 
 import {
-	type AnyChildDescriptor,
-	type AnyDescriptor,
-	type DocumentationRoot,
-	type GitHubViewMode,
-	TypeSymbol,
+  type AnyChildDescriptor,
+  type AnyDescriptor,
+  type DocumentationRoot,
+  type GitHubViewMode,
+  TypeSymbol,
 } from "./types";
 import { defineCommon, getSymbol } from "./helpers";
 import type VersionAggregator from "./version-aggregator";
 
 export class TypeNavigator {
-	static knownSymbols = {
-		METHOD: TypeSymbol.Method,
-		MEMBER: TypeSymbol.Member,
-		EVENT: TypeSymbol.Event,
-	};
+  static knownSymbols = {
+    METHOD: TypeSymbol.Method,
+    MEMBER: TypeSymbol.Member,
+    EVENT: TypeSymbol.Event,
+  };
 
-	readonly aggregator: VersionAggregator;
-	knownFiles: string[] = [];
-	map: Collection<string, AnyDescriptor> = new Collection();
-	// {type} -> {entry} + {get parent?}
-	tag: string;
+  readonly aggregator: VersionAggregator;
+  knownFiles: string[] = [];
+  map: Collection<string, AnyDescriptor> = new Collection();
+  // {type} -> {entry} + {get parent?}
+  tag: string;
 
-	#deferred = Promise.withResolvers();
-	#fetchedAt?: number;
-	#interval: FixedInterval;
-	#raw?: DocumentationRoot;
-	#ready = false;
+  #deferred = Promise.withResolvers();
+  #fetchedAt?: number;
+  #interval: FixedInterval;
+  #raw?: DocumentationRoot;
+  #ready = false;
 
-	get meta() {
-		if (!this.#ready) return undefined;
-		return this.#raw.meta;
-	}
+  get meta() {
+    if (!this.#ready) return undefined;
+    return this.#raw.meta;
+  }
 
-	get ready() {
-		return this.#ready;
-	}
+  get ready() {
+    return this.#ready;
+  }
 
-	get onReady() {
-		return this.#deferred.promise;
-	}
+  get onReady() {
+    return this.#deferred.promise;
+  }
 
-	constructor(tag: string, aggregator: VersionAggregator) {
-		this.tag = tag;
-		this.aggregator = aggregator;
-		this.#setupInterval();
+  constructor(tag: string, aggregator: VersionAggregator) {
+    this.tag = tag;
+    this.aggregator = aggregator;
+    this.#setupInterval();
 
-		// #fetchedAt
-	}
+    // #fetchedAt
+  }
 
-	#setupInterval(force = false) {
-		if (this.#interval && !force) return;
+  #setupInterval(force = false) {
+    if (this.#interval && !force) return;
 
-		this.#interval = new FixedInterval(
-			TIME.HOUR / 4,
-			0,
-			false,
-			this.refresh.bind(this),
-		);
-		this.refresh();
-	}
+    this.#interval = new FixedInterval(
+      TIME.HOUR / 4,
+      0,
+      false,
+      this.refresh.bind(this),
+    );
+    this.refresh();
+  }
 
-	get #targetURI() {
-		return `${this.aggregator.provider.baseRawURL("docs")}/${this.tag}.json`;
-	}
+  get #targetURI() {
+    return `${this.aggregator.provider.baseRawURL("docs")}/${this.tag}.json`;
+  }
 
-	baseRepoURL(view: GitHubViewMode = "tree") {
-		return this.aggregator.provider.baseRepoURL(this.tag, view);
-	}
+  baseRepoURL(view: GitHubViewMode = "tree") {
+    return this.aggregator.provider.baseRepoURL(this.tag, view);
+  }
 
-	baseRawURL(file: string, lineRange: [number, number?]) {
-		const lineString = lineRange
-			.filter(Boolean)
-			.map((n) => `L${n}`)
-			.join("-");
+  codeFileURL(file: string, lineRange: [number, number?]) {
+    const lineString = lineRange
+      .filter(Boolean)
+      .map((n) => `L${n}`)
+      .join("-");
 
-		return `${this.aggregator.provider.baseRawURL(this.tag)}/${file}#${lineString}`;
-	}
+    return `${this.baseRepoURL('blob')}/${file}#${lineString}`;
+  }
 
-	docsURL(descriptor: AnyDescriptor) {
-		return this.aggregator.provider.docsURL(this.tag, descriptor);
-	}
+  rawFileURL(file: string) {
+    return `${this.aggregator.provider.baseRawURL(this.tag)}/${file}`;
+  }
 
-	rawDocsURL(species: string, type: string) {
-		return this.aggregator.provider.rawDocsURL(this.tag, species, type);
-	}
+  docsURL(descriptor: AnyDescriptor) {
+    return this.aggregator.provider.docsURL(this.tag, descriptor);
+  }
 
-	static joinKey(entryPath: string[], connector: string) {
-		return entryPath.filter(Boolean).join(connector);
-	}
+  rawDocsURL(species: string, type: string) {
+    return this.aggregator.provider.rawDocsURL(this.tag, species, type);
+  }
 
-	get<T extends AnyDescriptor>(entity: string): T {
-		return this.map.get(entity) as T;
-	}
+  static joinKey(entryPath: string[], connector: string) {
+    return entryPath.filter(Boolean).join(connector);
+  }
 
-	filterEntity(entityPath: string, limit = 20) {
-		if (!this.#ready) return [];
+  get<T extends AnyDescriptor>(entity: string): T {
+    return this.map.get(entity) as T;
+  }
 
-		return filter(entityPath, [...this.map.keys()]).slice(0, limit);
-	}
+  filterEntity(entityPath: string, limit = 20) {
+    if (!this.#ready) return [];
 
-	filterFile(filePath: string, limit = 20) {
-		if (!this.#ready) return [];
+    return filter(entityPath, [...this.map.keys()]).slice(0, limit);
+  }
 
-		return filter(filePath, this.knownFiles).slice(0, limit);
-	}
-	/*
+  filterFile(filePath: string, limit = 20) {
+    if (!this.#ready) return [];
+
+    return filter(filePath, this.knownFiles).slice(0, limit);
+  }
+  /*
   find(parentName: string, childName?: string) {
     if (!this.#ready) return;
 
     for (const connector of Object.values(TypeNavigator.knownSymbols)) {
-      const assumedKey = TypeNavigator.joinKey([parentName, childName], connector);
+    const assumedKey = TypeNavigator.joinKey([parentName, childName], connector);
 
-      if (!this.map.has(assumedKey)) continue;
-      else return this.map.get(assumedKey);
+    if (!this.map.has(assumedKey)) continue;
+    else return this.map.get(assumedKey);
     }
   }
   */
-	async refresh() {
-		this.#ready = false;
-		this.#deferred = Promise.withResolvers();
-		this.map.clear();
+  async refresh() {
+    this.#ready = false;
+    this.#deferred = Promise.withResolvers();
+    this.map.clear();
 
-		const res = await this.aggregator.provider.fetchGitHubAPI(this.#targetURI);
-		this.#raw = await res.json();
+    const res = await this.aggregator.provider.fetchGitHubAPI(this.#targetURI);
+    this.#raw = await res.json();
 
-		this.#fetchedAt = Date.now();
+    this.#fetchedAt = Date.now();
 
-		for (const classEntry of this.#raw.classes) {
-			this.#define("class", classEntry);
-		}
+    for (const classEntry of this.#raw.classes) {
+      this.#define("class", classEntry);
+    }
 
-		for (const typeEntry of this.#raw.typedefs) {
-			this.#define("typedef", typeEntry);
-		}
+    for (const typeEntry of this.#raw.typedefs) {
+      this.#define("typedef", typeEntry);
+    }
 
-		this.#ready = true;
-		this.#deferred.resolve();
-	}
+    this.#ready = true;
+    this.#deferred.resolve();
+  }
 
-	#define<Descriptor extends AnyDescriptor>(
-		descriptorType: string,
-		descriptor: Descriptor,
-	) {
-		defineCommon(this, descriptorType, descriptor);
+  #define<Descriptor extends AnyDescriptor>(
+    descriptorType: string,
+    descriptor: Descriptor,
+  ) {
+    defineCommon(this, descriptorType, descriptor);
 
-		this.map.set(descriptor.toString(), descriptor);
-		if ("path" in descriptor.meta)
-			this.#registerKnownFile([descriptor.meta.path, descriptor.meta.file]);
+    this.map.set(descriptor.toString(), descriptor);
+    if ("path" in descriptor.meta)
+      this.#registerKnownFile([descriptor.meta.path, descriptor.meta.file]);
 
-		const pairs = {
-			Event: "events",
-			Method: "methods",
-			Member: "props",
-		};
+    const pairs = {
+      Event: "events",
+      Method: "methods",
+      Member: "props",
+    };
 
-		for (const [species, location] of Object.entries(pairs)) {
-			if (location in descriptor) {
-				for (const entry of descriptor[location] as AnyChildDescriptor[]) {
-					const symbol = getSymbol(species);
+    for (const [species, location] of Object.entries(pairs)) {
+      if (location in descriptor) {
+        for (const entry of descriptor[location] as AnyChildDescriptor[]) {
+          const symbol = getSymbol(species);
 
-					defineCommon(this, species, descriptor, entry, symbol);
+          defineCommon(this, species, descriptor, entry, symbol);
 
-					this.map.set(entry.toString(), entry);
-					if (entry.meta && "path" in entry.meta)
-						this.#registerKnownFile([entry.meta.path, entry.meta.file]);
-				}
-			}
-		}
-	}
+          this.map.set(entry.toString(), entry);
+          if (entry.meta && "path" in entry.meta)
+            this.#registerKnownFile([entry.meta.path, entry.meta.file]);
+        }
+      }
+    }
+  }
 
-	#registerKnownFile(pathOrMeta: string | string[]) {
-		const [filePath] = (
-			Array.isArray(pathOrMeta) ? pathOrMeta.join("/") : pathOrMeta
-		).split("#");
-		if (!filePath.startsWith("src")) return;
-		if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
-	}
+  #registerKnownFile(pathOrMeta: string | string[]) {
+    const [filePath] = (
+      Array.isArray(pathOrMeta) ? pathOrMeta.join("/") : pathOrMeta
+    ).split("#");
+    if (!filePath.startsWith("src")) return;
+    if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
+  }
 }
