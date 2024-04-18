@@ -107,7 +107,7 @@ creator.on("componentInteraction", (ctx) => {
 
 registerComponents(creator);
 await creator.registerCommandsIn(
-	path.resolve(import.meta.dirname, "./commands"),
+	path.resolve(import.meta.dir, "./commands"),
 	[".ts"],
 );
 console.timeLog("Startup", "Commands & Components Loaded");

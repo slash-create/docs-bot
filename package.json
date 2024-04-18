@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A template for slash-create",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "format": "biome format --write ./src/*",
     "lint": "biome lint --apply ./src/*",
