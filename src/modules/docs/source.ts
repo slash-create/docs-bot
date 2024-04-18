@@ -61,6 +61,17 @@ export class Provider implements ProviderOptions {
 		});
 	}
 
+  fetchGitHubRaw(endpoint: string, method = "GET"): Promise<Response> {
+    return fetch(new URL(endpoint, GITHUB_RAW_URL), {
+      method,
+			...(process.env.GITHUB_API_TOKEN && {
+				headers: {
+					Authorizaiton: process.env.GITHUB_API_TOKEN,
+				},
+			}),
+    })
+  }
+
 	get iconURL() {
 		if (this.iconAsset.startsWith("https://")) return this.iconAsset;
 		return `${this.baseRawURL()}/${this.iconAsset}`;

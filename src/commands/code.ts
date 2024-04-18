@@ -107,7 +107,13 @@ export default class CodeCommand extends SlashCommand {
 
 		switch (focused) {
 			case "library": {
-				return Provider.filter(focusedOption).map((result) => ({
+				const results = focusedOption.length
+					? Provider.filter(focusedOption)
+					: Provider.all.map((provider) => {
+						return { original: provider, string: provider.label }
+					});
+
+				return results.map((result) => ({
 					name: `${result.original.label} (${result.original.docsHost})`,
 					value: result.string,
 				}));
@@ -118,7 +124,11 @@ export default class CodeCommand extends SlashCommand {
 				if (!provider) return [responses.unknown];
 				if (!provider.aggregator.ready) return [responses.loading];
 
-				return provider.aggregator.filter(focusedOption).map((value) => {
+				const results = focusedOption.length
+					? provider.aggregator.filter(focusedOption)
+					: provider.aggregator.all.map((version) => ({ string: version }));
+
+				return results.map((value) => {
 					let tagString: string;
 
 					if (VERSION_REGEX.test(value.string)) tagString = "Release";
@@ -144,9 +154,9 @@ export default class CodeCommand extends SlashCommand {
 
 				if (!typeNavigator.ready) return [responses.loading];
 
-        const results = command === 'entity'
-          ? typeNavigator.filterEntity(focusedOption)
-          : typeNavigator.filterFile(focusedOption);
+				const results = command === 'entity'
+					? typeNavigator.filterEntity(focusedOption)
+					: typeNavigator.filterFile(focusedOption);
 
 				return results.map((value) => {
 					return {
@@ -211,7 +221,7 @@ export default class CodeCommand extends SlashCommand {
 			}
 		}
 
-		const res = await typeNavigator.aggregator.provider.fetchGitHubAPI(
+		const res = await typeNavigator.aggregator.provider.fetchGitHubRaw(
 			`${typeNavigator.baseRepoURL()}/${options.version}/${file}`,
 		);
 		const body = await res.text();
