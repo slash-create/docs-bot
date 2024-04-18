@@ -107,13 +107,13 @@ export default class CodeCommand extends SlashCommand {
 
 		switch (focused) {
 			case "library": {
-				return Provider.filter(options.library).map((result) => ({
+				return Provider.filter(focusedOption).map((result) => ({
 					name: `${result.original.label} (${result.original.docsHost})`,
 					value: result.string,
 				}));
 			}
 			case "version": {
-				const provider = Provider.get(focusedOption.split("(")[0].trim());
+				const provider = Provider.get(options.library.split("(")[0].trim());
 
 				if (!provider) return [responses.unknown];
 				if (!provider.aggregator.ready) return [responses.loading];
@@ -144,9 +144,11 @@ export default class CodeCommand extends SlashCommand {
 
 				if (!typeNavigator.ready) return [responses.loading];
 
-				return typeNavigator[
-					command === "entity" ? "filterEntity" : "filterFile"
-				](focused).map((value) => {
+        const results = command === 'entity'
+          ? typeNavigator.filterEntity(focused)
+          : typeNavigator.filterFile(focused);
+
+				return results.map((value) => {
 					return {
 						name: `${value.string} (🧮 ${value.score})`,
 						value: value.string,
@@ -331,7 +333,7 @@ export default class CodeCommand extends SlashCommand {
 			{
 				type: ComponentType.BUTTON,
 				style: ButtonStyle.LINK,
-				url: typeNavigator.codeFileURL(version, file, [actualStart, actualEnd]),
+				url: typeNavigator.codeFileURL(file, [actualStart, actualEnd]),
 				label: "Open GitHub",
 				emoji: {
 					name: "📂",

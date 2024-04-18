@@ -83,11 +83,13 @@ export class TypeNavigator {
 		return this.aggregator.provider.baseRepoURL(this.tag, view);
 	}
 
-	codeFileURL(ref: string, file: string, lineRange: [number, number?]) {
+	codeFileURL(file: string, lineRange: [number, number?]) {
 		const lineString = lineRange
 			.filter(Boolean)
 			.map((n) => `L${n}`)
 			.join("-");
+
+    const ref = this.tag === 'latest' ? this.aggregator.latestRelease : this.tag;
 
 		return `${this.baseRepoURL("blob")}/${ref}/${file}#${lineString}`;
 	}
