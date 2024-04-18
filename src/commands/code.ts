@@ -145,8 +145,8 @@ export default class CodeCommand extends SlashCommand {
 				if (!typeNavigator.ready) return [responses.loading];
 
         const results = command === 'entity'
-          ? typeNavigator.filterEntity(focused)
-          : typeNavigator.filterFile(focused);
+          ? typeNavigator.filterEntity(focusedOption)
+          : typeNavigator.filterFile(focusedOption);
 
 				return results.map((value) => {
 					return {
