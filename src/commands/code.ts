@@ -177,7 +177,9 @@ export default class CodeCommand extends SlashCommand {
       }
     }
 
-    const res = await fetch(`${typeNavigator.baseRepoURL()}/${options.version}/${file}`);
+    const res = await typeNavigator.aggregator.provider.fetchGitHubAPI(
+      `${typeNavigator.baseRepoURL()}/${options.version}/${file}`
+    );
     const body = await res.text();
     const lines = body.split('\n');
 
