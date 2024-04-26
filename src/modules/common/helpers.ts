@@ -13,7 +13,7 @@ export const hashMapToString = (
 	seperator = ", ",
 ) =>
 	Object.keys(input)
-		.map((key) => key + connector + input[key])
+		.map((key) => key + connector + JSON.stringify(input[key]))
 		.join(seperator);
 
 export const plural = (
