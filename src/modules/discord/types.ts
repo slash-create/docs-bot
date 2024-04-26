@@ -21,5 +21,5 @@ export interface SharedCommandInfo {
   subCommands: string[];
   options: CommandContext['options'];
   focused: string;
-  focusedOption: string | number;
+  focusedOption: string;
 }
