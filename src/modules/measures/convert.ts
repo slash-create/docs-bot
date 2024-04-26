@@ -7,7 +7,7 @@ export const measure = convert(all);
 export const described = measure().list();
 export const list = measure().measures();
 export const filtered = list.filter(
-  (unit, index, arr) =>
-    arr.indexOf(unit) === index && unit.toLowerCase() === unit,
+	(unit, index, arr) =>
+		arr.indexOf(unit) === index && unit.toLowerCase() === unit,
 );
 export const grouped = groupBy(described, (unit) => unit.measure);

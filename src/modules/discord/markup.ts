@@ -9,14 +9,14 @@ import type { TimeStyle } from "./types";
  * @returns The link markup
  */
 export const link = (
-  text: string,
-  href: string | URL,
-  alt = "",
-  hide = false,
+	text: string,
+	href: string | URL,
+	alt = "",
+	hide = false,
 ) => `[${text}](${hide ? `<${href}>` : href}${alt ? ` "${alt}"` : ""})`;
 
 export const command = (name: string[], id: string) =>
-  `</${name.join(" ")}:${id}>`;
+	`</${name.join(" ")}:${id}>`;
 
 export const time = (dateTime: number | Date, style: TimeStyle) =>
-  `<t:${Math.floor(dateTime.valueOf() / 1000)}:${style}>`;
+	`<t:${Math.floor(dateTime.valueOf() / 1000)}:${style}>`;
