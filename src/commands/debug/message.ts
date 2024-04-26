@@ -1,5 +1,6 @@
 import {
   ApplicationCommandType,
+  ApplicationIntegrationType,
   ButtonStyle,
   ComponentType,
   SlashCommand,
@@ -18,6 +19,10 @@ export default class MessageDebugCommand extends SlashCommand {
     super(creator, {
       name: "Debug Message",
       type: ApplicationCommandType.MESSAGE,
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       deferEphemeral: true,
     });
   }

@@ -12,6 +12,7 @@ import {
   type MessageOptions,
   SlashCommand,
   type SlashCreator,
+  ApplicationIntegrationType,
 } from "slash-create";
 
 import { ephemeralResponse as _ } from "&common/helpers";
@@ -44,6 +45,10 @@ export default class DocumentationCommand extends SlashCommand {
     super(creator, {
       name: "docs",
       description: "Query documentation",
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       // functionality here was derived from Eris' docs bot
       options: [
         {

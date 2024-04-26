@@ -8,6 +8,7 @@ import {
   type MessageOptions,
   SlashCommand,
   type SlashCreator,
+  ApplicationIntegrationType,
 } from "slash-create";
 
 import { casual as chrono } from "chrono-node";
@@ -23,6 +24,10 @@ export default class TemporalCommand extends SlashCommand {
     super(creator, {
       name: "temporal",
       description: "Simplified use of Discord's time syntax.",
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       deferEphemeral: true,
       options: [
         {

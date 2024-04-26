@@ -11,6 +11,7 @@ import {
   type MessageOptions,
   SlashCommand,
   type SlashCreator,
+  ApplicationIntegrationType,
 } from "slash-create";
 
 import {
@@ -38,6 +39,10 @@ export default class CodeCommand extends SlashCommand {
     super(creator, {
       name: "code",
       description: "Get a section of code from the source repository.",
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       options: [
         {
           name: "entity",

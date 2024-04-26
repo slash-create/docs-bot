@@ -1,5 +1,6 @@
 import {
   ApplicationCommandType,
+  ApplicationIntegrationType,
   CommandOptionType,
   SlashCommand,
   type CommandChannel,
@@ -32,6 +33,10 @@ export default class ChatDebugCommand extends SlashCommand {
       name: "debug",
       type: ApplicationCommandType.CHAT_INPUT,
       description: "Debug provided entities for interaction contexts.",
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       options: [
         {
           name: "user",

@@ -31,6 +31,7 @@ import {
   SlashCommand,
   type SlashCreator,
   type MessageOptions,
+  ApplicationIntegrationType,
 } from "slash-create";
 
 import { filter } from "fuzzy";
@@ -48,6 +49,10 @@ export default class UtilsCommand extends SlashCommand {
     super(creator, {
       name: "utils",
       description: "Misc. stuff", // ~
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       deferEphemeral: true,
       options: [
         {

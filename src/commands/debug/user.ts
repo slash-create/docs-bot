@@ -4,6 +4,7 @@ import {
   type MessageOptions,
   SlashCommand,
   type SlashCreator,
+  ApplicationIntegrationType,
 } from "slash-create";
 import ChatDebugCommand from "./chat";
 
@@ -12,6 +13,10 @@ export default class UserDebugCommand extends SlashCommand {
     super(creator, {
       name: "Debug User",
       type: ApplicationCommandType.USER,
+      integrationTypes: [
+        ApplicationIntegrationType.GUILD_INSTALL,
+        ApplicationIntegrationType.USER_INSTALL
+      ],
       deferEphemeral: true,
     });
   }
