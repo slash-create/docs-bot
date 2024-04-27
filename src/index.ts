@@ -3,6 +3,7 @@ import {
 	CommandOptionType,
 	type ApplicationCommandOption,
 	BunServer,
+  ChannelType,
 } from "slash-create";
 import path from "node:path";
 
@@ -12,6 +13,7 @@ import registerComponents from "./components";
 import { logPrefix } from "&console/context";
 import { duration } from "&console/helpers";
 import { commandTypeStrings } from "&discord/constants";
+import { displayUser } from "&discord/helpers";
 
 console.time("Startup");
 
@@ -33,9 +35,26 @@ creator.on("commandRun", async (command, promise, ctx) => {
 		(target, command) => target[command],
 		ctx.options,
 	);
+  const stringResolver = (value: string | number | boolean) => {
+    if (typeof value === 'string') {
+      if (ctx.users.has(value)) {
+        const user = ctx.users.get(value);
+        return `<${user.bot ? 'App' : 'User'} | ${displayUser(user)}>`;
+      }
+      if (ctx.channels.has(value)) {
+        const channel = ctx.channels.get(value);
+        return `<Channel {${ChannelType[channel.type]}} | ${channel.name} (${channel.id})>`;
+      }
+      if (ctx.roles.has(value)) {
+        const role = ctx.roles.get(value);
+        return `<Role | ${role.name} (${role.id}) 🎨 ${role.colorHex}>`;
+      }
+    }
+    return JSON.stringify(value);
+  }
 	const commandString = `/${command.commandName} ${ctx.subcommands.join(
 		" ",
-	)} { ${hashMapToString(options)} }`;
+	)} { ${hashMapToString(options, " = ", ', ', stringResolver)} }`;
 	const wrappedTimer = duration();
 	await promise;
 	console.info(`${logPrefix(ctx)} ran ${commandString} in ${wrappedTimer()}`);
