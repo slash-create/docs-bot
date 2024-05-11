@@ -1,28 +1,23 @@
 import {
 	ApplicationCommandType,
-	ApplicationIntegrationType,
 	ButtonStyle,
 	ComponentType,
-	SlashCommand,
 	type CommandContext,
 	type ComponentActionRow,
 	type MessageOptions,
 	type SlashCreator,
 } from "slash-create";
 
-import { component as deleteComponent } from "../../components/delete-repsonse";
+import BaseCommand from "&discord/base-command";
 
 import ChatDebugCommand from "./chat";
+import { component as deleteComponent } from "../../components/delete-repsonse";
 
-export default class MessageDebugCommand extends SlashCommand {
+export default class MessageDebugCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "Debug Message",
 			type: ApplicationCommandType.MESSAGE,
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			deferEphemeral: true,
 		});
 	}

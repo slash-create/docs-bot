@@ -1,54 +1,41 @@
 import { filter } from "fuzzy";
 import {
-	type AnyComponentButton,
-	type AutocompleteChoice,
-	type AutocompleteContext,
-	ButtonStyle,
-	type CommandContext,
-	CommandOptionType,
-	ComponentType,
-	type EmbedField,
-	type MessageEmbedOptions,
-	type MessageOptions,
-	SlashCommand,
-	type SlashCreator,
-	ApplicationIntegrationType,
+  ButtonStyle,
+  CommandOptionType,
+  ComponentType,
+  type AnyComponentButton,
+  type AutocompleteChoice,
+  type AutocompleteContext,
+  type CommandContext,
+  type EmbedField,
+  type MessageEmbedOptions,
+  type MessageOptions,
+  type SlashCreator,
 } from "slash-create";
 
 import { ephemeralResponse as _ } from "&common/helpers";
-import {
-	libraryOption,
-	queryOption,
-	shareOption,
-	versionOption,
-} from "&discord/command-options";
+import BaseCommand from "&discord/base-command";
+import { libraryOption, queryOption, shareOption, versionOption } from "&discord/command-options";
 import { displayUser, getCommandInfo } from "&discord/helpers";
 import * as responses from "&discord/responses";
 import { BASE_MDN_URL, VERSION_REGEX, standardObjects } from "&docs/constants";
 import type { TypeNavigator } from "&docs/navigator";
 import { Provider } from "&docs/source";
-import type {
-	AnyCallableDescriptor,
-	AnyDescriptor,
-	AnyStructureDescriptor,
-} from "&docs/types";
+import type { AnyCallableDescriptor, AnyDescriptor, AnyStructureDescriptor } from "&docs/types";
 
 import { component as deleteComponent } from "../components/delete-repsonse";
+
 /**
  * /docs search query*: string, version?*: string, share?: boolean = false
  * /docs debug version?*: string
  * /docs manifest version?*: string
  */
 
-export default class DocumentationCommand extends SlashCommand {
+export default class DocumentationCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "docs",
 			description: "Query documentation",
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			// functionality here was derived from Eris' docs bot
 			options: [
 				{

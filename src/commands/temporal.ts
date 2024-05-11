@@ -18,16 +18,13 @@ import { timeOptionFactory as timeOption } from "&discord/command-options";
 import { time } from "&discord/markup";
 import { TimeStyle } from "&discord/types";
 import { resolveStarSign } from "&measures/star-sign";
+import BaseCommand from "&discord/base-command";
 
-export default class TemporalCommand extends SlashCommand {
+export default class TemporalCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "temporal",
 			description: "Simplified use of Discord's time syntax.",
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			deferEphemeral: true,
 			options: [
 				{

@@ -2,21 +2,18 @@ import {
 	ApplicationCommandType,
 	type CommandContext,
 	type MessageOptions,
-	SlashCommand,
 	type SlashCreator,
-	ApplicationIntegrationType,
 } from "slash-create";
+
+import BaseCommand from "&discord/base-command";
+
 import ChatDebugCommand from "./chat";
 
-export default class UserDebugCommand extends SlashCommand {
+export default class UserDebugCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "Debug User",
 			type: ApplicationCommandType.USER,
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			deferEphemeral: true,
 		});
 	}

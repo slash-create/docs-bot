@@ -1,48 +1,41 @@
-import { filter, filter as fuzzyFilter } from "fuzzy";
-
 import {
-	type AnyComponentButton,
-	type AutocompleteChoice,
-	type AutocompleteContext,
-	ButtonStyle,
-	type CommandContext,
-	CommandOptionType,
-	ComponentType,
-	type MessageOptions,
-	SlashCommand,
-	type SlashCreator,
-	ApplicationIntegrationType,
+  ApplicationIntegrationType,
+  ButtonStyle,
+  CommandOptionType,
+  ComponentType,
+  type AnyComponentButton,
+  type AutocompleteChoice,
+  type AutocompleteContext,
+  type CommandContext,
+  type MessageOptions,
+  type SlashCreator,
 } from "slash-create";
 
 import {
-	ephemeralResponse as _,
-	numLength,
-	trimContent,
+  ephemeralResponse as _,
+  numLength,
 } from "&common/helpers";
 import {
-	libraryOption,
-	lineNumbersOption,
-	queryOption,
-	shareOption,
-	versionOption,
+  libraryOption,
+  lineNumbersOption,
+  queryOption,
+  shareOption,
+  versionOption,
 } from "&discord/command-options";
 import { getCommandInfo } from "&discord/helpers";
 import * as responses from "&discord/responses";
-
-import { component as deleteComponent } from "../components/delete-repsonse";
-import { Provider } from "&docs/source";
+import BaseCommand from "&discord/base-command";
 import { VERSION_REGEX } from "&docs/constants";
+import { Provider } from "&docs/source";
 import type { DocumentationFile } from "&docs/types";
 
-export default class CodeCommand extends SlashCommand {
+import { component as deleteComponent } from "../components/delete-repsonse";
+
+export default class CodeCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "code",
 			description: "Get a section of code from the source repository.",
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			options: [
 				{
 					name: "entity",

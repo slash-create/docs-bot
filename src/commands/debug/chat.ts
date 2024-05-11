@@ -1,8 +1,6 @@
 import {
 	ApplicationCommandType,
-	ApplicationIntegrationType,
 	CommandOptionType,
-	SlashCommand,
 	type CommandChannel,
 	type CommandContext,
 	type CommandMember,
@@ -15,6 +13,7 @@ import {
 } from "slash-create";
 
 import { ephemeralResponse as _ } from "&common/helpers";
+import BaseCommand from "&discord/base-command";
 
 enum MentionPrefixes {
 	user = "@",
@@ -27,16 +26,12 @@ type ResolvedDebugUser =
 	| CommandMember
 	| (ResolvedMemberData & { user: CommandUser });
 
-export default class ChatDebugCommand extends SlashCommand {
+export default class ChatDebugCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "debug",
 			type: ApplicationCommandType.CHAT_INPUT,
 			description: "Debug provided entities for interaction contexts.",
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			options: [
 				{
 					name: "user",

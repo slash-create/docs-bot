@@ -24,35 +24,26 @@
  */
 
 import {
-	type AutocompleteChoice,
-	type AutocompleteContext,
-	type CommandContext,
-	CommandOptionType,
-	SlashCommand,
-	type SlashCreator,
-	type MessageOptions,
-	ApplicationIntegrationType,
+  CommandOptionType,
+  type AutocompleteChoice,
+  type AutocompleteContext,
+  type CommandContext,
+  type MessageOptions,
+  type SlashCreator,
 } from "slash-create";
 
 import { filter } from "fuzzy";
 
-import {
-	ephemeralResponse as _,
-	hashMapToString,
-	plural,
-} from "&common/helpers";
+import { ephemeralResponse as _,  hashMapToString, plural } from "&common/helpers";
+import BaseCommand from "&discord/base-command";
 import { command } from "&discord/markup";
 import { filtered, grouped, measure } from "&measures/convert";
 
-export default class UtilsCommand extends SlashCommand {
+export default class UtilsCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "utils",
 			description: "Misc. stuff", // ~
-			integrationTypes: [
-				ApplicationIntegrationType.GUILD_INSTALL,
-				ApplicationIntegrationType.USER_INSTALL,
-			],
 			deferEphemeral: true,
 			options: [
 				{
