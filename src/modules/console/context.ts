@@ -11,7 +11,7 @@ export function logPrefix(ctx: CommandContext | ComponentContext) {
 
 	const channelType = channelTypeStrings[ctx.channel.type];
 
-	return `(${channelType}) ${userString} in #${ctx.channel.name} [${messagePath} {${ctx.interactionID}}]`;
+	return `(${channelType}) ${userString} [${messagePath} {${ctx.interactionID}}]`;
 }
 
 export function timeScope(
