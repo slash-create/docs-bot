@@ -1,11 +1,7 @@
-import {
-	ApplicationIntegrationType,
-	ChannelType,
-	type CommandContext,
-	type ComponentContext,
-} from "slash-create";
+import type { CommandContext, ComponentContext } from "slash-create";
 
 import { displayUser } from "&discord/helpers";
+import { channelTypeStrings } from "&discord/constants";
 
 export function logPrefix(ctx: CommandContext | ComponentContext) {
 	const userString = displayUser(ctx.user);
@@ -13,10 +9,9 @@ export function logPrefix(ctx: CommandContext | ComponentContext) {
 		"message" in ctx ? `/${ctx.message.id}` : ""
 	}`;
 
-	const channelType = ChannelType[ctx.channel.type];
-	const installType = ApplicationIntegrationType[ctx.context];
+	const channelType = channelTypeStrings[ctx.channel.type];
 
-	return `(${channelType},${installType}) ${userString} [${messagePath} {${ctx.interactionID}}]`;
+	return `(${channelType}) ${userString} in #${ctx.channel.name} [${messagePath} {${ctx.interactionID}}]`;
 }
 
 export function timeScope(
