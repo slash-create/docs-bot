@@ -633,18 +633,9 @@ const days = [
 ];
 
 const months = [
-	/* eslint-disable prettier/prettier*/
-	/* Q1 */ "January",
-	"Febuary",
-	"March",
-	/* Q2 */ "April",
-	"May",
-	"June",
-	/* Q3 */ "July",
-	"August",
-	"September",
-	/* Q4 */ "October",
-	"November",
-	"December",
-	/* eslint-enable prettier/prettier */
+	/* biome-ignore format: yearly quarters format in thirds */
+	/* Q1 */ "January", "Febuary", "March",
+	/* Q2 */ "April", "May", "June",
+	/* Q3 */ "July", "August", "September",
+	/* Q4 */ "October", "November", "December"
 ];
