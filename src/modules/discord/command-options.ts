@@ -65,9 +65,9 @@ export const timeOptionFactory = (
 });
 
 export const timezoneOption: ApplicationCommandOptionAutocompletable = {
-  name: 'timezone',
-  description: 'Specify a timezone to construct from. (default = UTC)',
-  type: CommandOptionType.STRING,
-  required: false,
-  autocomplete: true
-}
+	name: "timezone",
+	description: "Specify a timezone to construct from. (default = UTC)",
+	type: CommandOptionType.STRING,
+	required: false,
+	autocomplete: true,
+};

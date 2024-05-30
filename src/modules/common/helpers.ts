@@ -11,7 +11,7 @@ export const hashMapToString = (
 	input: object,
 	connector = " = ",
 	seperator = ", ",
-  callback = (value: unknown): string => JSON.stringify(value)
+	callback = (value: unknown): string => JSON.stringify(value),
 ) =>
 	Object.keys(input)
 		.map((key) => key + connector + callback(input[key]))

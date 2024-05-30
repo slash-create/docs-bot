@@ -1,26 +1,23 @@
 import {
-  ApplicationIntegrationType,
-  ButtonStyle,
-  CommandOptionType,
-  ComponentType,
-  type AnyComponentButton,
-  type AutocompleteChoice,
-  type AutocompleteContext,
-  type CommandContext,
-  type MessageOptions,
-  type SlashCreator,
+	ApplicationIntegrationType,
+	ButtonStyle,
+	CommandOptionType,
+	ComponentType,
+	type AnyComponentButton,
+	type AutocompleteChoice,
+	type AutocompleteContext,
+	type CommandContext,
+	type MessageOptions,
+	type SlashCreator,
 } from "slash-create";
 
+import { ephemeralResponse as _, numLength } from "&common/helpers";
 import {
-  ephemeralResponse as _,
-  numLength,
-} from "&common/helpers";
-import {
-  libraryOption,
-  lineNumbersOption,
-  queryOption,
-  shareOption,
-  versionOption,
+	libraryOption,
+	lineNumbersOption,
+	queryOption,
+	shareOption,
+	versionOption,
 } from "&discord/command-options";
 import { getCommandInfo } from "&discord/helpers";
 import * as responses from "&discord/responses";
