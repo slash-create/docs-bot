@@ -401,7 +401,7 @@ export default class TemporalCommand extends BaseCommand {
 
 		if (
 			(date > 28 && month === 1) ||
-			([3, 5, 9, 11].includes(month) && date === 31)
+			([3, 5, 8, 10].includes(month) && date === 31)
 		)
 			// 28th-31st Feb
 			return `\`${date}/${months[month]}\` is not possible, please try again.`;
