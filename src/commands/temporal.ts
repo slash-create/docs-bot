@@ -19,7 +19,8 @@ import { time } from "&discord/markup";
 import { TimeStyle } from "&discord/types";
 import { resolveStarSign } from "&measures/star-sign";
 import BaseCommand from "&discord/base-command";
-import timezones, { offsetTimeTo, queryTimezone } from "&measures/timezones";
+import timezones, { offsetOf, offsetTimeTo, queryTimezone } from "&measures/timezones";
+import { getCommandInfo } from "&discord/helpers";
 
 export default class TemporalCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
@@ -239,6 +240,30 @@ export default class TemporalCommand extends BaseCommand {
 						},
 					],
 				},
+        {
+          name: 'query',
+          description: 'Query a time instant.',
+          type: CommandOptionType.SUB_COMMAND,
+          options: [
+            {
+              name: "instant",
+              description: [
+                "The time instant to query.",
+                "(default = {now})",
+              ].join(" "),
+              type: CommandOptionType.INTEGER,
+              required: true,
+              autocomplete: true,
+            },
+            {
+              name: 'discord',
+              description: 'Whether the instant originates from Discord? (i.e. timestamp markup)',
+              type: CommandOptionType.BOOLEAN,
+              required: false
+            },
+            timezoneOption,
+          ]
+        }
 			],
 		});
 	}
@@ -315,9 +340,13 @@ export default class TemporalCommand extends BaseCommand {
 		switch (focused) {
 			case "instant": {
 				// /temporal parse ... instant: integer
-				const { instant: value } = options as TemporalParseOptions;
+				const { instant: value, discord = false } = options as TemporalParseOptions | TemporalQueryOptions;
 
-				return [{ name: intlDate.format(value), value }];
+        if (!value) {
+          return [{ name: intlDate.format(ctx.invokedAt), value: ctx.invokedAt }]
+        }
+
+				return [{ name: intlDate.format(value * (discord ? 1000 : 1)), value }];
 			}
 
       case "timezone": {
@@ -375,7 +404,7 @@ export default class TemporalCommand extends BaseCommand {
 			TimeStyle.LONG_TIME,
 			TimeStyle.SHORT_DATE,
 			TimeStyle.RELATIVE_TIME,
-		].map((style) => this.#showAndTell(time(invokedAt, style)));
+		].map((style) => this.#showAndTell(time(invokedTime, style)));
 
 		const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
 		const starSignString = this.#starSignStringFor(
@@ -481,6 +510,8 @@ export default class TemporalCommand extends BaseCommand {
 		ctx: CommandContext,
 		options: TemporalParseOptions,
 	): string {
+    if (options.timezone && !timezones.has(options.timezone))
+      return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
 		const {
 			query,
 			instant /* Date.now() */,
@@ -524,6 +555,8 @@ export default class TemporalCommand extends BaseCommand {
 		ctx: CommandContext,
 		options: TemporalExactOptions,
 	): string {
+    if (options.timezone && !timezones.has(options.timezone))
+      return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
 		const { year, month, day, hour, minute, second, timezone = 'Atlantic/Reykjavik' } = options;
 
     if (
@@ -552,6 +585,35 @@ export default class TemporalCommand extends BaseCommand {
 			`> ${starSignString}`,
 		].join("\n");
 	}
+
+  #runTemporalQuery(
+    ctx: CommandContext,
+    options: TemporalQueryOptions
+  ): string {
+    if (options.timezone && !timezones.has(options.timezone))
+      return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
+		const invokedTime = new Date(options.instant * (options.discord ? 1000 : 1));
+    const offsetTime = offsetTimeTo(options.timezone ?? 'UTC', invokedTime);
+
+		const [longTime, shortDate, relativeTime] = [
+			TimeStyle.LONG_TIME,
+			TimeStyle.SHORT_DATE,
+			TimeStyle.RELATIVE_TIME,
+		].map((style) => this.#showAndTell(time(offsetTime, style)));
+
+    const timeZoneNote = options.timezone
+      ? `The provided instant was offset for \`${options.timezone}\`
+         with a difference of ${offsetOf(options.timezone)} hours.`.replace(/\s+/g, ' ')
+      : '';
+
+		const invokedTimeString = `The queried instant was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
+		const starSignString = this.#starSignStringFor(
+			invokedTime,
+			StarSignConstruct.RELATIVE,
+		);
+
+		return `${invokedTimeString}\n> ${starSignString}\n${timeZoneNote}`;
+  }
 
 	#runTemporalSnowflake(
 		ctx: CommandContext,
@@ -625,6 +687,7 @@ interface TemporalOccuranceOptions {
 
 interface TemporalParseOptions {
 	query: string;
+  discord?: boolean;
 	instant?: number; // = {invokedAt}
 	forward_date?: boolean; // = true
 	select?: /* = */ "first" | "last"; // = 'first'
@@ -640,6 +703,12 @@ interface TemporalExactOptions {
 	minute: number;
 	second: number;
   timezone: string // = UTC
+}
+
+interface TemporalQueryOptions {
+  instant: number;
+  discord?: boolean;
+  timezone?: string; // UTC
 }
 
 const days = [

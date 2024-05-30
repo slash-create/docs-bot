@@ -39,3 +39,19 @@ export function offsetTimeTo(timeZone: string, date: Date) {
   const timeZoneRelativeOffset = new Date(date.toLocaleString('en', { timeZone }));
   return new Date(date.valueOf() + timeZoneRelativeOffset.valueOf() - date.valueOf());
 }
+
+/**
+ *
+ * @param timeZone Provide as a IANA identifier.
+ * @returns The timezone offset relative to UTC.
+ */
+export function offsetOf(timeZone) {
+  const now = new Date();
+
+  return Math.round(
+    new Date(
+      (now.valueOf() - offsetTimeTo(timeZone, now).valueOf()) / (60 * 60 * 1000) + (now.getTimezoneOffset() / 60)
+    ).valueOf()
+  )
+}
+offsetOf('Pacific/Honolulu')
