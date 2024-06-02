@@ -14,11 +14,21 @@ import {
 import { casual as chrono } from "chrono-node";
 
 import { plural } from "&common/helpers";
-import { timeOptionFactory as timeOption } from "&discord/command-options";
+import {
+	timeOptionFactory as timeOption,
+	timezoneOption,
+} from "&discord/command-options";
 import { time } from "&discord/markup";
 import { TimeStyle } from "&discord/types";
 import { resolveStarSign } from "&measures/star-sign";
 import BaseCommand from "&discord/base-command";
+import timezones, {
+	offsetOf,
+	offsetTimeTo,
+	queryTimezone,
+} from "&measures/timezones";
+import { getCommandInfo } from "&discord/helpers";
+import { TIME } from "&common/constants";
 
 export default class TemporalCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
@@ -31,6 +41,19 @@ export default class TemporalCommand extends BaseCommand {
 					name: "now",
 					description: "Get the current time.",
 					type: CommandOptionType.SUB_COMMAND,
+          options: [
+						timezoneOption,
+						{
+							name: "instant",
+							description: [
+								"The time instant to query.",
+								"(default = {now})",
+							].join(" "),
+							type: CommandOptionType.STRING,
+							required: false,
+							autocomplete: true,
+						}
+					],
 				},
 				{
 					name: "occurrences",
@@ -115,6 +138,7 @@ export default class TemporalCommand extends BaseCommand {
 							type: CommandOptionType.STRING,
 							required: true,
 						},
+						timezoneOption,
 						{
 							name: "instant",
 							description: [
@@ -122,7 +146,7 @@ export default class TemporalCommand extends BaseCommand {
 								"If it is for the timestamp markup, add three zeros to the end.",
 								"(default = {now})",
 							].join(" "),
-							type: CommandOptionType.INTEGER,
+							type: CommandOptionType.STRING,
 							autocomplete: true,
 						},
 						{
@@ -169,6 +193,7 @@ export default class TemporalCommand extends BaseCommand {
 						timeOption("hour", { min: 0, max: 23 }),
 						timeOption("minute", { min: 0, max: 60 }),
 						timeOption("second", { min: 0, max: 60 }),
+						timezoneOption,
 					],
 				},
 				{
@@ -300,19 +325,46 @@ export default class TemporalCommand extends BaseCommand {
 	}
 
 	async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
-		const { locale, focused, options } = ctx;
+		const { locale, focused, subcommands } = ctx;
+		const options = subcommands.reduce((acc, curr) => acc[curr], ctx.options);
+
 		const intlDate = new Intl.DateTimeFormat(locale, {
-			dateStyle: "full",
-			timeStyle: "full",
-			timeZone: "UTC",
+			dateStyle: "long",
+			timeStyle: "long",
+			timeZone: timezones.has(options.timezone) ? options.timezone : "UTC",
 		});
 
 		switch (focused) {
 			case "instant": {
 				// /temporal parse ... instant: integer
-				const { instant: value } = options.parse as TemporalParseOptions;
+				const { instant } = options as
+					| TemporalParseOptions
+					| TemporalNowOptions;
 
-				return [{ name: intlDate.format(value), value }];
+        const results: AutocompleteChoice[] = [
+          {
+						name: `${intlDate.format(ctx.invokedAt)} { NOW }`,
+						value: new Date(ctx.invokedAt).toISOString()
+					},
+        ];
+
+        if (instant) {
+          const dateInstant = new Date(instant);
+
+          results.unshift({ name: intlDate.format(dateInstant), value: dateInstant.toISOString() })
+        }
+
+        return results;
+			}
+
+			case "timezone": {
+				const results = queryTimezone(options[focused] /* , locale */)
+					.slice(0, 20)
+					.map((timezone) => ({
+						name: timezone.original.toString(),
+						value: timezone.original.intl,
+					}));
+				return results;
 			}
 
 			default:
@@ -328,7 +380,7 @@ export default class TemporalCommand extends BaseCommand {
 
 		switch (parentCommand) {
 			case "now":
-				content = this.#runTemporalNow(ctx);
+				content = this.#runTemporalNow(ctx, options);
 				break;
 
 			case "occurrences":
@@ -354,23 +406,38 @@ export default class TemporalCommand extends BaseCommand {
 		return { content, ephemeral: true };
 	}
 
-	#runTemporalNow(ctx: CommandContext): string {
-		const { invokedAt } = ctx;
-		const invokedTime = new Date(invokedAt);
+	#runTemporalNow(ctx: CommandContext, options: TemporalNowOptions): string {
+		if (options.timezone && !timezones.has(options.timezone)) {
+			return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
+		}
+
+		const invokedTime = new Date(options.instant ?? ctx.invokedAt);
+		const referenceString =
+			"instant" in options ? "instant occured" : "command was invoked";
+
+		const offsetTimeHours = options.timezone ? offsetTimeTo(options.timezone, invokedTime) : 0;
+    const offsetTime = new Date(invokedTime.valueOf() + offsetTimeHours);
+		const timeZoneNote = options.timezone && offsetTimeHours !== 0
+			? `The provided ${referenceString.split(" ").at(0)} was offset for \`${options.timezone}\`
+         with a difference of **${plural(offsetTimeHours / TIME.HOUR, "hour")}**. - *Relative to UTC*`.replace(
+					/\s+/g,
+					" ",
+				)
+			: "";
 
 		const [longTime, shortDate, relativeTime] = [
 			TimeStyle.LONG_TIME,
 			TimeStyle.SHORT_DATE,
 			TimeStyle.RELATIVE_TIME,
-		].map((style) => this.#showAndTell(time(invokedAt, style)));
+		].map((style) => this.#showAndTell(time(offsetTime, style)));
 
-		const invokedTimeString = `This command was invoked ${relativeTime} at ${longTime} on ${shortDate}.`;
+		const invokedTimeString = `This ${referenceString} ${relativeTime} at ${longTime} on ${shortDate}.`;
 		const starSignString = this.#starSignStringFor(
-			invokedTime,
+			offsetTime,
 			StarSignConstruct.RELATIVE,
 		);
 
-		return `${invokedTimeString}\n> ${starSignString}`;
+		return `${invokedTimeString}\n> ${starSignString}\n${timeZoneNote}`;
 	}
 
 	/**
@@ -401,7 +468,7 @@ export default class TemporalCommand extends BaseCommand {
 
 		if (
 			(date > 28 && month === 1) ||
-			([3, 5, 9, 11].includes(month) && date === 31)
+			([3, 5, 8, 10].includes(month) && date === 31)
 		)
 			// 28th-31st Feb
 			return `\`${date}/${months[month]}\` is not possible, please try again.`;
@@ -442,7 +509,7 @@ export default class TemporalCommand extends BaseCommand {
 		if (select !== "random")
 			occurances.sort((a, b) => (select === "first" ? a - b : b - a));
 
-		/* eslint-disable prettier/prettier */
+		/* biome-ignore format:  */
 		const prefix = select === "random" ? "A selection from" : `The ${select}`;
 		const dateString = `${days[weekDay]}, ${months[month]} ${this.#ordinal(
 			date,
@@ -476,34 +543,50 @@ export default class TemporalCommand extends BaseCommand {
 		ctx: CommandContext,
 		options: TemporalParseOptions,
 	): string {
+		if (options.timezone && !timezones.has(options.timezone))
+			return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
 		const {
 			query,
 			instant /* Date.now() */,
 			select = "first",
 			count = 3,
 			forward_date: forwardDate = false,
+			timezone = "UTC",
 		} = options;
 
+		const dateInstant = new Date(instant ?? ctx.invokedAt);
+		const adjustedTimezone = timezone.includes("(")
+			? timezone.split(" ").at(0)
+			: timezone;
+		const offsetInstant = offsetTimeTo(adjustedTimezone, dateInstant);
 		const shortTime = this.#stylePredicate(TimeStyle.SHORT_FORMAT);
 
 		const results = chrono
 			.parse(
 				query,
-				{ instant: new Date(instant ?? ctx.invokedAt) /* timezone*/ },
+				{
+					instant: dateInstant,
+					timezone: adjustedTimezone,
+				},
 				{ forwardDate },
 			)
-			.map(
-				(entry) =>
-					this.#showAndTell(shortTime(entry.start.date())) +
-					(entry.end ? ` until ${shortTime(entry.end.date())}` : ""),
-			);
+			.map((entry) => {
+				let ret = this.#showAndTell(
+					shortTime(offsetTimeTo(adjustedTimezone, entry.start.date())),
+				);
+				if (entry.end)
+					ret += ` until ${shortTime(
+						offsetTimeTo(adjustedTimezone, entry.end.date()),
+					)}`;
+				return ret;
+			});
 
 		if (select === "last") results.reverse();
 		if (results.length > count) results.splice(count, results.length);
 
 		return [
 			`The ${select} **${plural(results.length, "result")}** from your query. ${
-				instant ? `(Relative to ${shortTime(instant)})` : ""
+				instant ? `(Relative to ${shortTime(offsetInstant)})` : ""
 			}`,
 			...results.map((value, index) => `${index + 1}. ${value}`),
 		].join("\n");
@@ -513,22 +596,55 @@ export default class TemporalCommand extends BaseCommand {
 		ctx: CommandContext,
 		options: TemporalExactOptions,
 	): string {
-		const { year, month, day, hour, minute, second } = options;
+		if (options.timezone && !timezones.has(options.timezone))
+			return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
+		const {
+			year,
+			month,
+			day,
+			hour,
+			minute,
+			second,
+			timezone = "Atlantic/Reykjavik",
+		} = options;
 
-		const exact = new Date(year, month, day, hour, minute, second);
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const isFuture = exact.valueOf() > ctx.invokedAt;
+		if (
+			(day > 28 && month === 1) ||
+			([3, 5, 8, 10].includes(month) && day === 31)
+		)
+			// 28th-31st Feb
+			return `\`${day}/${months[month]}\` is not possible, please try again.`;
+
+		const adjustedTimezone = timezone.includes("(")
+			? timezone.split(" ").at(0)
+			: timezone;
+		const exactUTC = new Date(
+			Date.UTC(year, month, day, hour, minute, second, 0),
+		);
+
+		const exactOffsetHours = adjustedTimezone ? offsetTimeTo(adjustedTimezone, exactUTC) : 0;
+    const exactOffset = new Date(exactUTC.valueOf() + (exactOffsetHours * TIME.HOUR));
+		const isFuture = exactOffset.valueOf() > ctx.invokedAt;
+
+    const timeZoneNote = options.timezone && exactOffsetHours !== 0
+			? `The provided arguments were offset for \`${options.timezone}\`
+         with a difference of **${plural(exactOffsetHours / TIME.HOUR, "hour")}**. - *Relative to UTC*`.replace(
+					/\s+/g,
+					" ",
+				)
+			: "";
 
 		const starSignString = this.#starSignStringFor(
-			exact,
+			exactOffset,
 			StarSignConstruct.NONE,
 		);
 
 		return [
 			`The provided arguments construct the timestamp of ${this.#showAndTell(
-				time(exact, TimeStyle.LONG_FORMAT),
-			)} ${time(exact, TimeStyle.RELATIVE_TIME)}`,
+				time(exactOffset, TimeStyle.LONG_FORMAT),
+			)} ${time(exactOffset, TimeStyle.RELATIVE_TIME)}`,
 			`> ${starSignString}`,
+      timeZoneNote
 		].join("\n");
 	}
 
@@ -595,6 +711,11 @@ enum StarSignConstruct {
 	SHORT = 2,
 }
 
+interface TemporalNowOptions {
+	timezone?: string;
+	instant?: string; // => number (because autocomplete is... shit)
+}
+
 interface TemporalOccuranceOptions {
 	date: number;
 	month: number;
@@ -607,10 +728,12 @@ interface TemporalOccuranceOptions {
 
 interface TemporalParseOptions {
 	query: string;
+	discord?: boolean;
 	instant?: number; // = {invokedAt}
 	forward_date?: boolean; // = true
 	select?: /* = */ "first" | "last"; // = 'first'
 	count?: number; // = 3
+	timezone?: string; // = UTC
 }
 
 interface TemporalExactOptions {
@@ -620,6 +743,7 @@ interface TemporalExactOptions {
 	hour: number;
 	minute: number;
 	second: number;
+	timezone: string; // = UTC
 }
 
 const days = [
@@ -633,18 +757,9 @@ const days = [
 ];
 
 const months = [
-	/* eslint-disable prettier/prettier*/
-	/* Q1 */ "January",
-	"Febuary",
-	"March",
-	/* Q2 */ "April",
-	"May",
-	"June",
-	/* Q3 */ "July",
-	"August",
-	"September",
-	/* Q4 */ "October",
-	"November",
-	"December",
-	/* eslint-enable prettier/prettier */
+	/* biome-ignore format: yearly quarters format in thirds */
+	/* Q1 */ ...["January", "Febuary", "March"],
+	/* Q2 */ ...["April", "May", "June"],
+	/* Q3 */ ...["July", "August", "September"],
+	/* Q4 */ ...["October", "November", "December"],
 ];

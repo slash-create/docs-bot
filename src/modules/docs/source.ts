@@ -44,6 +44,7 @@ export class Provider implements ProviderOptions {
 	}
 
 	baseStructURL(ref = "master") {
+		if (ref === "latest") ref = this.aggregator.latestRelease;
 		return `${GITHUB_API_URL}/repos/${this.repoLocation}/git/trees/${ref}`;
 	}
 

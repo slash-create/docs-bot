@@ -24,17 +24,21 @@
  */
 
 import {
-  CommandOptionType,
-  type AutocompleteChoice,
-  type AutocompleteContext,
-  type CommandContext,
-  type MessageOptions,
-  type SlashCreator,
+	CommandOptionType,
+	type AutocompleteChoice,
+	type AutocompleteContext,
+	type CommandContext,
+	type MessageOptions,
+	type SlashCreator,
 } from "slash-create";
 
 import { filter } from "fuzzy";
 
-import { ephemeralResponse as _,  hashMapToString, plural } from "&common/helpers";
+import {
+	ephemeralResponse as _,
+	hashMapToString,
+	plural,
+} from "&common/helpers";
 import BaseCommand from "&discord/base-command";
 import { command } from "&discord/markup";
 import { filtered, grouped, measure } from "&measures/convert";

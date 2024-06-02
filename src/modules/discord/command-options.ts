@@ -63,3 +63,11 @@ export const timeOptionFactory = (
 	...(min_value && { min_value }),
 	...(max_value && { max_value }),
 });
+
+export const timezoneOption: ApplicationCommandOptionAutocompletable = {
+	name: "timezone",
+	description: "Specify a timezone to construct from. (default = UTC)",
+	type: CommandOptionType.STRING,
+	required: false,
+	autocomplete: true,
+};
