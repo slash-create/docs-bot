@@ -364,7 +364,6 @@ export default class TemporalCommand extends BaseCommand {
 						name: timezone.original.toString(),
 						value: timezone.original.intl,
 					}));
-				console.log(results);
 				return results;
 			}
 
