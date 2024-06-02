@@ -9,9 +9,9 @@ export function displayUser(user: User) {
 	return `${userName + userDiscrim} (${user.id})`;
 }
 
-export function getCommandInfo(
+export function getCommandInfo<T>(
 	ctx: CommandContext | AutocompleteContext,
-): SharedCommandInfo {
+): SharedCommandInfo<T> {
 	const subCommands = ctx.subcommands;
 	const options = subCommands.reduce((opt, cmd) => opt[cmd], ctx.options);
 

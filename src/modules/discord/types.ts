@@ -17,9 +17,9 @@ export enum TimeStyle {
 	RELATIVE_TIME = "R",
 }
 
-export interface SharedCommandInfo {
+export interface SharedCommandInfo<T extends CommandContext["options"]> {
 	subCommands: string[];
-	options: CommandContext["options"];
+	options: T;
 	focused: string;
 	focusedOption: string;
 }
