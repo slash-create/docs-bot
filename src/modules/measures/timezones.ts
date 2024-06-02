@@ -1,5 +1,7 @@
 import { Collection } from "slash-create";
 import { type FilterResult, filter } from "fuzzy";
+import { roundByFactor } from "&common/math";
+import { TIME } from "&common/constants";
 
 export interface TimeZoneDetails {
 	intl: string;
@@ -45,9 +47,7 @@ export function offsetTimeTo(timeZone: string, date: Date) {
 	const timeZoneRelativeOffset = new Date(
 		date.toLocaleString("en", { timeZone }),
 	);
-	return new Date(
-		date.valueOf() + timeZoneRelativeOffset.valueOf() - date.valueOf(),
-	);
+	return roundByFactor(timeZoneRelativeOffset.valueOf() - date.valueOf(), TIME.HOUR)
 }
 
 /**
@@ -60,8 +60,8 @@ export function offsetOf(timeZone) {
 
 	return Math.round(
 		new Date(
-			(now.valueOf() - offsetTimeTo(timeZone, now).valueOf()) /
-				(60 * 60 * 1000) +
+			(now.valueOf() - offsetTimeTo(timeZone, now)) /
+				TIME.HOUR +
 				now.getTimezoneOffset() / 60,
 		).valueOf(),
 	);

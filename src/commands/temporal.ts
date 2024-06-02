@@ -28,6 +28,7 @@ import timezones, {
 	queryTimezone,
 } from "&measures/timezones";
 import { getCommandInfo } from "&discord/helpers";
+import { TIME } from "&common/constants";
 
 export default class TemporalCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
@@ -336,25 +337,24 @@ export default class TemporalCommand extends BaseCommand {
 		switch (focused) {
 			case "instant": {
 				// /temporal parse ... instant: integer
-				const { instant: value } = options as
+				const { instant } = options as
 					| TemporalParseOptions
 					| TemporalNowOptions;
 
-				if (!value)
-					return [
-						{
-							name: `${intlDate.format(ctx.invokedAt)} { NOW }`,
-							value: ctx.invokedAt,
-						},
-					];
-
-				return [
-					{ name: intlDate.format(new Date(value)), value },
-					{
+        const results: AutocompleteChoice[] = [
+          {
 						name: `${intlDate.format(ctx.invokedAt)} { NOW }`,
-						value: ctx.invokedAt,
+						value: new Date(ctx.invokedAt).toISOString()
 					},
-				];
+        ];
+
+        if (instant) {
+          const dateInstant = new Date(instant);
+
+          results.unshift({ name: intlDate.format(dateInstant), value: dateInstant.toISOString() })
+        }
+
+        return results;
 			}
 
 			case "timezone": {
@@ -415,10 +415,11 @@ export default class TemporalCommand extends BaseCommand {
 		const referenceString =
 			"instant" in options ? "instant occured" : "command was invoked";
 
-		const offsetTime = offsetTimeTo(options.timezone ?? "UTC", invokedTime);
-		const timeZoneNote = options.timezone
+		const offsetTimeHours = options.timezone ? offsetTimeTo(options.timezone, invokedTime) : 0;
+    const offsetTime = new Date(invokedTime.valueOf() + offsetTimeHours);
+		const timeZoneNote = options.timezone && offsetTimeHours !== 0
 			? `The provided ${referenceString.split(" ").at(0)} was offset for \`${options.timezone}\`
-         with a difference of ${offsetOf(options.timezone)} hours.`.replace(
+         with a difference of **${plural(offsetTimeHours / TIME.HOUR, "hour")}**. - *Relative to UTC*`.replace(
 					/\s+/g,
 					" ",
 				)
@@ -428,7 +429,7 @@ export default class TemporalCommand extends BaseCommand {
 			TimeStyle.LONG_TIME,
 			TimeStyle.SHORT_DATE,
 			TimeStyle.RELATIVE_TIME,
-		].map((style) => this.#showAndTell(time(invokedTime, style)));
+		].map((style) => this.#showAndTell(time(offsetTime, style)));
 
 		const invokedTimeString = `This ${referenceString} ${relativeTime} at ${longTime} on ${shortDate}.`;
 		const starSignString = this.#starSignStringFor(
@@ -620,16 +621,18 @@ export default class TemporalCommand extends BaseCommand {
 		const exactUTC = new Date(
 			Date.UTC(year, month, day, hour, minute, second, 0),
 		);
-    const timeZoneNote = options.timezone
+
+		const exactOffsetHours = adjustedTimezone ? offsetTimeTo(adjustedTimezone, exactUTC) : 0;
+    const exactOffset = new Date(exactUTC.valueOf() + (exactOffsetHours * TIME.HOUR));
+		const isFuture = exactOffset.valueOf() > ctx.invokedAt;
+
+    const timeZoneNote = options.timezone && exactOffsetHours !== 0
 			? `The provided arguments were offset for \`${options.timezone}\`
-         with a difference of ${offsetOf(options.timezone)} hours.`.replace(
+         with a difference of **${plural(exactOffsetHours / TIME.HOUR, "hour")}**. - *Relative to UTC*`.replace(
 					/\s+/g,
 					" ",
 				)
 			: "";
-
-		const exactOffset = offsetTimeTo(adjustedTimezone, exactUTC);
-		const isFuture = exactOffset.valueOf() > ctx.invokedAt;
 
 		const starSignString = this.#starSignStringFor(
 			exactOffset,
