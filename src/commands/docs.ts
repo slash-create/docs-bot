@@ -40,6 +40,13 @@ import { component as deleteComponent } from "../components/delete-repsonse";
  * /docs manifest version?*: string
  */
 
+interface DocsSearchOptions {
+  library: string;
+  query: string;
+  version?: string;
+  share?: boolean;
+}
+
 export default class DocumentationCommand extends BaseCommand {
 	constructor(creator: SlashCreator) {
 		super(creator, {
@@ -58,7 +65,7 @@ export default class DocumentationCommand extends BaseCommand {
 	}
 
 	async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
-		const { options, focused, focusedOption } = getCommandInfo(ctx);
+		const { options, focused, focusedOption } = getCommandInfo<DocsSearchOptions>(ctx);
 
 		if (!options.library && focused !== "library") return [responses.select];
 
@@ -73,7 +80,7 @@ export default class DocumentationCommand extends BaseCommand {
 			}
 
 			case "version": {
-				const provider = Provider.get(options.library);
+				const provider = Provider.get(options.library.split("(")[0].trim());
 
 				if (!provider) return [responses.unknown];
 				if (!provider.aggregator.ready) return [responses.loading];
@@ -102,11 +109,11 @@ export default class DocumentationCommand extends BaseCommand {
 			case "query": {
 				const { library, version = "latest" } = options;
 
-				const provider = Provider.get(library);
+				const provider = Provider.get(library.split("(")[0].trim());
 				if (!provider) return [responses.unknown];
 				if (!provider.aggregator.ready) return [responses.loading];
 
-				const typeNavigator = provider.aggregator.getTag(version);
+				const typeNavigator = provider.aggregator.getTag(version.split("(")[0].trim());
 				if (!typeNavigator.ready) return [responses.loading];
 
 				return typeNavigator.filterEntity(focusedOption).map((value) => {
@@ -139,7 +146,7 @@ export default class DocumentationCommand extends BaseCommand {
 		ctx: CommandContext,
 		options: DocSearchOptions,
 	): Promise<MessageOptions | string> {
-		const provider = Provider.get(options.library);
+		const provider = Provider.get(options.library.split("(")[0].trim());
 
 		if (!provider) return _(responses.unknown.name);
 		if (!provider.aggregator.ready) {
@@ -148,7 +155,7 @@ export default class DocumentationCommand extends BaseCommand {
 		}
 
 		const typeNavigator = provider.aggregator.getTag(
-			options.version ?? "latest",
+			options.version.split("(")[0].trim() ?? "latest",
 		);
 		if (!typeNavigator) return _(responses.unknown.name);
 		if (!typeNavigator.ready) {
