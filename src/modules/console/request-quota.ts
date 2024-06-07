@@ -15,7 +15,7 @@ export async function quotaInterval() {
   for (const key of Object.keys(quotas.resources)) {
     const quotaString = buildQuotaString(key, quotas.resources[key]);
     if (!quotaString) continue;
-    console.log(quotaString);
+    console.info(quotaString);
   }
 }
 
