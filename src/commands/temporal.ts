@@ -13,7 +13,7 @@ import {
 
 import { casual as chrono } from "chrono-node";
 
-import { plural } from "&common/helpers";
+import { isEmpty, plural } from "&common/helpers";
 import {
 	timeOptionFactory as timeOption,
 	timezoneOption,
@@ -564,7 +564,7 @@ export default class TemporalCommand extends BaseCommand {
 
 		const dateInstant = new Date(instant ?? ctx.invokedAt);
 		const adjustedTimezone =
-			timezone !== "" && timezone.includes("(")
+      !isEmpty(timezone) && timezone.includes("(")
 				? timezone.split(" ").at(0)
 				: timezone;
 		const offsetHours = adjustedTimezone
@@ -629,7 +629,7 @@ export default class TemporalCommand extends BaseCommand {
 			return `\`${day}/${months[month]}\` is not possible, please try again.`;
 
 		const adjustedTimezone =
-			timezone !== "" && timezone.includes("(")
+      !isEmpty(timezone) && timezone.includes("(")
 				? timezone.split(" ").at(0)
 				: timezone;
 		const exactUTC = new Date(
