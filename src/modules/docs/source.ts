@@ -2,11 +2,10 @@ import { capitalize } from "&common/helpers";
 import { filter } from "fuzzy";
 
 import { GITHUB_API_URL, GITHUB_RAW_URL, GITHUB_WEB_URL } from "./constants";
-import {
-	type AnyDescriptor,
-	type GitHubViewMode,
-	type ProviderOptions,
-	TypeString,
+import type {
+	AnyDescriptor,
+	GitHubViewMode,
+	ProviderOptions,
 } from "./types";
 import VersionAggregator from "./version-aggregator";
 
@@ -107,7 +106,7 @@ export class Provider implements ProviderOptions {
 				let path = descriptor.name;
 
 				if (descriptor.parent)
-					path += `${descriptor.parent.name}:${capitalize(
+					path = `${descriptor.parent.name}:${capitalize(
 						descriptor.parent.species,
 					)}#${path}`;
 				else path += `:${capitalize(descriptor.species)}`;
@@ -155,12 +154,12 @@ export class Provider implements ProviderOptions {
 		return [Provider.dbots, Provider.dbotHook, Provider.slashCreate];
 	}
 
+  static get list() {
+    return Provider.all.map(provider => provider.label);
+  }
+
 	static filter(query: string) {
-		return filter(query, Provider.all, {
-			extract(input) {
-				return input.label;
-			},
-		});
+		return filter(query, Provider.list);
 	}
 
 	static get map() {

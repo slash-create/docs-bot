@@ -1,8 +1,8 @@
 export const TIME = {
 	MILLISECOND: 1,
 	SECOND: 1000,
-	MINUTE: 1000 * 60,
-	HOUR: 1000 * 60 * 60,
-	DAY: 1000 * 60 * 60 * 24,
-	WEEK: 1000 * 60 * 60 * 24 * 7,
-};
+	MINUTE: 60_000,
+	HOUR: 3_600_000,
+	DAY: 86_400_000,
+	WEEK: 604_800_000,
+} as const;

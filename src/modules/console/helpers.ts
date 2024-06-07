@@ -12,7 +12,7 @@ export function duration() {
 			result.val.toPrecision(8),
 			["0", "."],
 			".",
-		).padStart(9, " ");
+		);
 		return `${valueString} ${result.unit}`;
 	};
 }

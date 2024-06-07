@@ -49,7 +49,7 @@ export function offsetTimeTo(timeZone: string, date: Date) {
 	);
 	return roundByFactor(
 		timeZoneRelativeOffset.valueOf() - date.valueOf(),
-		TIME.HOUR,
+		TIME.HOUR / 2,
 	);
 }
 
@@ -68,4 +68,5 @@ export function offsetOf(timeZone) {
 		).valueOf(),
 	);
 }
-offsetOf("Pacific/Honolulu");
+
+export const serverOffset = offsetOf("+01:00");

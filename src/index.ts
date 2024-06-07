@@ -14,6 +14,7 @@ import { logPrefix } from "&console/context";
 import { duration } from "&console/helpers";
 import { commandTypeStrings } from "&discord/constants";
 import { displayUser } from "&discord/helpers";
+import { quotaInterval } from "&console/request-quota";
 
 console.time("Startup");
 
@@ -138,3 +139,7 @@ await creator.collectCommandIDs();
 await creator.startServer();
 
 console.timeEnd("Startup");
+
+// Expect 2n requests to be used
+// docs manifest list + latest docs manfiest for each provider
+await quotaInterval();
