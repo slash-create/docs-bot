@@ -158,7 +158,7 @@ export default class DocumentationCommand extends BaseCommand {
 		}
 
 		const typeNavigator = provider.aggregator.getTag(
-			options.version.split("(")[0].trim() ?? "latest",
+			(options.version ?? "latest").split("(")[0].trim(),
 		);
 		if (!typeNavigator) return _(responses.unknown.name);
 		if (!typeNavigator.ready) {
