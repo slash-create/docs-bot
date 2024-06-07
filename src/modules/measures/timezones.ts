@@ -47,7 +47,10 @@ export function offsetTimeTo(timeZone: string, date: Date) {
 	const timeZoneRelativeOffset = new Date(
 		date.toLocaleString("en", { timeZone }),
 	);
-	return roundByFactor(timeZoneRelativeOffset.valueOf() - date.valueOf(), TIME.HOUR)
+	return roundByFactor(
+		timeZoneRelativeOffset.valueOf() - date.valueOf(),
+		TIME.HOUR,
+	);
 }
 
 /**
@@ -60,8 +63,7 @@ export function offsetOf(timeZone) {
 
 	return Math.round(
 		new Date(
-			(now.valueOf() - offsetTimeTo(timeZone, now)) /
-				TIME.HOUR +
+			(now.valueOf() - offsetTimeTo(timeZone, now)) / TIME.HOUR +
 				now.getTimezoneOffset() / 60,
 		).valueOf(),
 	);

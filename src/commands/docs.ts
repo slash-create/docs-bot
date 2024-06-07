@@ -41,10 +41,10 @@ import { component as deleteComponent } from "../components/delete-repsonse";
  */
 
 interface DocsSearchOptions {
-  library: string;
-  query: string;
-  version?: string;
-  share?: boolean;
+	library: string;
+	query: string;
+	version?: string;
+	share?: boolean;
 }
 
 export default class DocumentationCommand extends BaseCommand {
@@ -65,7 +65,8 @@ export default class DocumentationCommand extends BaseCommand {
 	}
 
 	async autocomplete(ctx: AutocompleteContext): Promise<AutocompleteChoice[]> {
-		const { options, focused, focusedOption } = getCommandInfo<DocsSearchOptions>(ctx);
+		const { options, focused, focusedOption } =
+			getCommandInfo<DocsSearchOptions>(ctx);
 
 		if (!options.library && focused !== "library") return [responses.select];
 
@@ -113,7 +114,9 @@ export default class DocumentationCommand extends BaseCommand {
 				if (!provider) return [responses.unknown];
 				if (!provider.aggregator.ready) return [responses.loading];
 
-				const typeNavigator = provider.aggregator.getTag(version.split("(")[0].trim());
+				const typeNavigator = provider.aggregator.getTag(
+					version.split("(")[0].trim(),
+				);
 				if (!typeNavigator.ready) return [responses.loading];
 
 				return typeNavigator.filterEntity(focusedOption).map((value) => {
