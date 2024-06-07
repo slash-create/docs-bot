@@ -556,7 +556,7 @@ export default class TemporalCommand extends BaseCommand {
 
 
     const dateInstant = new Date(instant ?? ctx.invokedAt);
-    const adjustedTimezone = timezone.includes("(")
+    const adjustedTimezone = timezone !== "" && timezone.includes("(")
       ? timezone.split(" ").at(0)
       : timezone;
     const offsetHours = adjustedTimezone ? offsetTimeTo(adjustedTimezone, dateInstant) : 0;
@@ -615,7 +615,7 @@ export default class TemporalCommand extends BaseCommand {
       // 28th-31st Feb
       return `\`${day}/${months[month]}\` is not possible, please try again.`;
 
-    const adjustedTimezone = timezone.includes("(")
+    const adjustedTimezone = timezone !== "" && timezone.includes("(")
       ? timezone.split(" ").at(0)
       : timezone;
     const exactUTC = new Date(
