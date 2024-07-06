@@ -109,8 +109,8 @@ export default class VersionAggregator {
 		const res = await this.provider.fetchGitHubAPI(
 			this.provider.baseStructURL("docs"),
 		);
-    
-    if (res.ok) {
+
+    if (!res.ok) {
       if (res.status === 403) {
         const resetHeader = new Date(+res.headers.get('x-ratelimit-reset') * 1000);
         if (this.#interval.nextCallAt > resetHeader.getTime())

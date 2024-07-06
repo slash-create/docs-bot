@@ -71,8 +71,6 @@ export class Provider implements ProviderOptions {
       })
     });
 
-    RequestQuota.patch(res.headers);
-
     if (res.status > 400 && res.status < 600) {
       console.error(this.label, res.status, res.statusText);
       if (res.status === 403) {
@@ -80,6 +78,8 @@ export class Provider implements ProviderOptions {
         console.warn(this.label, "reset at", resetHeader);
       }
     }
+
+    RequestQuota.patch(res.headers);
 
     return res;
   }
