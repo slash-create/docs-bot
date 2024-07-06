@@ -14,7 +14,8 @@ import { logPrefix } from "&console/context";
 import { duration } from "&console/helpers";
 import { commandTypeStrings } from "&discord/constants";
 import { displayUser } from "&discord/helpers";
-import { quotaInterval } from "&console/request-quota";
+import RequestQuota from "&console/request-quota";
+import { Provider } from "&docs/source";
 
 console.time("Startup");
 
@@ -142,4 +143,5 @@ console.timeEnd("Startup");
 
 // Expect 2n requests to be used
 // docs manifest list + latest docs manfiest for each provider
-await quotaInterval();
+await Promise.allSettled(Provider.all.map((provider) => provider.aggregator.ready));
+RequestQuota.debug();

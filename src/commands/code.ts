@@ -95,7 +95,7 @@ export default class CodeCommand extends BaseCommand {
 			focused,
 			focusedOption,
 			options,
-		} = getCommandInfo(ctx);
+		} = getCommandInfo<AnyCodeOptions>(ctx);
 
 		if (!options.library && ctx.focused !== "library")
 			return [responses.select];
@@ -168,7 +168,7 @@ export default class CodeCommand extends BaseCommand {
 		const {
 			subCommands: [subCommand],
 			options,
-		} = getCommandInfo(ctx);
+		} = getCommandInfo<AnyCodeOptions>(ctx);
 
 		const { library, version = "latest" } = options;
 
@@ -188,7 +188,7 @@ export default class CodeCommand extends BaseCommand {
 
 		switch (subCommand) {
 			case "entity": {
-				const { query, around = 3, offset = 0 } = options;
+				const { query, around = 3, offset = 0 } = options as CodeEntityOptions;
 
 				if (!typeNavigator.map.has(query))
 					return _(`Entity \`${query}\` was not found in type map.`);
@@ -203,7 +203,7 @@ export default class CodeCommand extends BaseCommand {
 			}
 
 			case "lines": {
-				let { query, start, end } = options;
+				let { query, start, end } = options as CodeLinesOptions;
 
 				if (!typeNavigator.knownFiles.includes(query))
 					return _(`Could not find ${query} in known files.`);
@@ -387,3 +387,23 @@ export default class CodeCommand extends BaseCommand {
 			? `\`${original}\``
 			: `~~\`${original}\`~~ \`${actual}\``;
 }
+
+interface CodeBaseOptions {
+  query: string;
+  library: string;
+  share?: boolean;
+  version?: string;
+  line_numbers?: boolean;
+}
+
+interface CodeEntityOptions extends CodeBaseOptions {
+  around?: number;
+  offset?: number;
+}
+
+interface CodeLinesOptions extends CodeBaseOptions {
+  start: number;
+  end: number;
+}
+
+type AnyCodeOptions = CodeEntityOptions | CodeLinesOptions;

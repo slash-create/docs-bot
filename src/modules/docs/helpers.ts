@@ -57,6 +57,10 @@ export function defineCommon(
 		is(this: AnyDescriptor, query: string) {
 			return this.species === query;
 		},
+    [Bun.inspect.custom](this: AnyDescriptor) {
+      const { species, meta = null, parent } = this;
+      return { name: this.toString(), species, meta, parent };
+    }
 	});
 
 	if (focus.meta) {
@@ -64,11 +68,7 @@ export function defineCommon(
 			return `${this.path}/${this.file}#L${this.line}`;
 		});
 	} else {
-		Reflect.set(focus, "meta", {
-			toString(this: AnyDescriptor) {
-				return this.parent.meta.toString();
-			},
-		});
+		Reflect.set(focus, "meta", focus.parent.meta ?? null);
 	}
 
 	if ("params" in focus) {
@@ -91,6 +91,9 @@ export function defineCommon(
 				get navigator() {
 					return navigator;
 				},
+        [Bun.inspect.custom](this: ParameterDescriptor) {
+          return { name: this.name, species: this.species };
+        }
 			});
 		});
 	}

@@ -66,7 +66,7 @@ export interface DocumentationMeta {
 
 export interface BaseDescriptor<Species, Parent = undefined> {
 	name: string;
-	meta: DocumentationFile | { toString(): string };
+	meta?: DocumentationFile | { toString(): string };
 
 	is(query: string | Species): query is Species;
 	toString(): string;

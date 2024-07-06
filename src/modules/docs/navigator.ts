@@ -178,7 +178,7 @@ export class TypeNavigator {
 				for (const entry of descriptor[location] as AnyChildDescriptor[]) {
 					const symbol = getSymbol(species);
 
-					defineCommon(this, species, descriptor, entry, symbol);
+					defineCommon(this, species.toLowerCase(), descriptor, entry, symbol);
 
 					this.map.set(entry.toString(), entry);
 					if (entry.meta && "path" in entry.meta)
@@ -195,4 +195,8 @@ export class TypeNavigator {
 		if (!filePath.startsWith("src")) return;
 		if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
 	}
+
+  [Bun.inspect.custom]() {
+    return `<${this.constructor.name} tag="${this.tag}">`;
+  }
 }
