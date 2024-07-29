@@ -70,6 +70,11 @@ export default class ChatDebugCommand extends BaseCommand {
 						},
 					],
 				},
+        {
+          name: "guild",
+          type: CommandOptionType.SUB_COMMAND,
+          description: "Print the payload for the target guild.",
+        },
 			],
 			deferEphemeral: true,
 		});
@@ -99,7 +104,7 @@ export default class ChatDebugCommand extends BaseCommand {
 		const [subCommand] = ctx.subcommands;
 		const { target } = ctx.options[subCommand];
 
-		let rawPayload: ResolvedDebugUser | CommandChannel | ResolvedRole;
+		let rawPayload: ResolvedDebugUser | CommandChannel | ResolvedRole | { id: string };
 		let error: string;
 
     if (!ctx.guildID && subCommand === 'role') {
@@ -124,6 +129,12 @@ export default class ChatDebugCommand extends BaseCommand {
 
 				break;
 			}
+
+      case "guild": {
+        // @ts-ignore
+        rawPayload = ctx.data.guild as { id: string };
+        break;
+      }
 		}
 
 		if (error) {
@@ -144,7 +155,7 @@ export default class ChatDebugCommand extends BaseCommand {
 
 	// rework `header` to use `type` instead and construct the header in this method
 	static resolveFinalPayload(
-		payload: ResolvedDebugUser | CommandChannel | ResolvedRole | MessageData,
+		payload: ResolvedDebugUser | CommandChannel | ResolvedRole | MessageData | { id: string },
 		type: string,
 		target: string,
 	): MessageOptions {
