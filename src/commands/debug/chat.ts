@@ -95,12 +95,16 @@ export default class ChatDebugCommand extends BaseCommand {
 				};
 	}
 
-	async run(ctx: CommandContext): Promise<MessageOptions> {
+	async run(ctx: CommandContext): Promise<MessageOptions | string> {
 		const [subCommand] = ctx.subcommands;
 		const { target } = ctx.options[subCommand];
 
 		let rawPayload: ResolvedDebugUser | CommandChannel | ResolvedRole;
 		let error: string;
+
+    if (!ctx.guildID && subCommand === 'role') {
+      return `</${this.commandName} ${subCommand}:${this.ids.get('global')}> is not in a guild context, you should not be here.`;
+    }
 
 		switch (subCommand) {
 			case "user": {
@@ -110,11 +114,6 @@ export default class ChatDebugCommand extends BaseCommand {
 
 			case "channel":
 			case "role": {
-				if (!ctx.guildID && subCommand === "role") {
-					error = "This is not a guild context, you should not be here.";
-					break;
-				}
-
 				const field = `${subCommand}s` as const;
 
 				// eslint-disable-next-line prettier/prettier
