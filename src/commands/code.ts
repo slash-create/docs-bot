@@ -389,21 +389,21 @@ export default class CodeCommand extends BaseCommand {
 }
 
 interface CodeBaseOptions {
-  query: string;
-  library: string;
-  share?: boolean;
-  version?: string;
-  line_numbers?: boolean;
+	query: string;
+	library: string;
+	share?: boolean;
+	version?: string;
+	line_numbers?: boolean;
 }
 
 interface CodeEntityOptions extends CodeBaseOptions {
-  around?: number;
-  offset?: number;
+	around?: number;
+	offset?: number;
 }
 
 interface CodeLinesOptions extends CodeBaseOptions {
-  start: number;
-  end: number;
+	start: number;
+	end: number;
 }
 
 type AnyCodeOptions = CodeEntityOptions | CodeLinesOptions;

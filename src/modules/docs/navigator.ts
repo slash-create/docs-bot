@@ -196,7 +196,7 @@ export class TypeNavigator {
 		if (!this.knownFiles.includes(filePath)) this.knownFiles.push(filePath);
 	}
 
-  [Bun.inspect.custom]() {
-    return `<${this.constructor.name} tag="${this.tag}">`;
-  }
+	[Bun.inspect.custom]() {
+		return `<${this.constructor.name} tag="${this.tag}">`;
+	}
 }
