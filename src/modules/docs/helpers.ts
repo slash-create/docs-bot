@@ -57,10 +57,10 @@ export function defineCommon(
 		is(this: AnyDescriptor, query: string) {
 			return this.species === query;
 		},
-    [Bun.inspect.custom](this: AnyDescriptor) {
-      const { species, meta = null, parent } = this;
-      return { name: this.toString(), species, meta, parent };
-    }
+		[Bun.inspect.custom](this: AnyDescriptor) {
+			const { species, meta = null, parent } = this;
+			return { name: this.toString(), species, meta, parent };
+		},
 	});
 
 	if (focus.meta) {
@@ -91,9 +91,9 @@ export function defineCommon(
 				get navigator() {
 					return navigator;
 				},
-        [Bun.inspect.custom](this: ParameterDescriptor) {
-          return { name: this.name, species: this.species };
-        }
+				[Bun.inspect.custom](this: ParameterDescriptor) {
+					return { name: this.name, species: this.species };
+				},
 			});
 		});
 	}

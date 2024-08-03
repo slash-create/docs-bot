@@ -70,6 +70,11 @@ export default class ChatDebugCommand extends BaseCommand {
 						},
 					],
 				},
+				{
+					name: "guild",
+					type: CommandOptionType.SUB_COMMAND,
+					description: "Print the payload for the target guild.",
+				},
 			],
 			deferEphemeral: true,
 		});
@@ -95,12 +100,22 @@ export default class ChatDebugCommand extends BaseCommand {
 				};
 	}
 
-	async run(ctx: CommandContext): Promise<MessageOptions> {
+	async run(ctx: CommandContext): Promise<MessageOptions | string> {
 		const [subCommand] = ctx.subcommands;
 		const { target } = ctx.options[subCommand];
 
-		let rawPayload: ResolvedDebugUser | CommandChannel | ResolvedRole;
+		let rawPayload:
+			| ResolvedDebugUser
+			| CommandChannel
+			| ResolvedRole
+			| { id: string };
 		let error: string;
+
+		if (!ctx.guildID && subCommand === "role") {
+			return `</${this.commandName} ${subCommand}:${this.ids.get(
+				"global",
+			)}> is not in a guild context, you should not be here.`;
+		}
 
 		switch (subCommand) {
 			case "user": {
@@ -110,11 +125,6 @@ export default class ChatDebugCommand extends BaseCommand {
 
 			case "channel":
 			case "role": {
-				if (!ctx.guildID && subCommand === "role") {
-					error = "This is not a guild context, you should not be here.";
-					break;
-				}
-
 				const field = `${subCommand}s` as const;
 
 				// eslint-disable-next-line prettier/prettier
@@ -123,6 +133,12 @@ export default class ChatDebugCommand extends BaseCommand {
 						? ctx.data.channel
 						: ctx.data.data.resolved[field][target];
 
+				break;
+			}
+
+			case "guild": {
+				// @ts-ignore
+				rawPayload = ctx.data.guild as { id: string };
 				break;
 			}
 		}
@@ -145,7 +161,12 @@ export default class ChatDebugCommand extends BaseCommand {
 
 	// rework `header` to use `type` instead and construct the header in this method
 	static resolveFinalPayload(
-		payload: ResolvedDebugUser | CommandChannel | ResolvedRole | MessageData,
+		payload:
+			| ResolvedDebugUser
+			| CommandChannel
+			| ResolvedRole
+			| MessageData
+			| { id: string },
 		type: string,
 		target: string,
 	): MessageOptions {

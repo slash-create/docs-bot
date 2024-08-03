@@ -64,7 +64,7 @@ export function groupBy<Key extends PropertyKey, Value>(
 }
 
 export function isEmpty(val: unknown) {
-  const empties: unknown[] = [null, undefined, "", Number.NaN] as const;
+	const empties: unknown[] = [null, undefined, "", Number.NaN] as const;
 
-  return empties.includes(val);
+	return empties.includes(val);
 }
