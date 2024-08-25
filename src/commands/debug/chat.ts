@@ -109,7 +109,6 @@ export default class ChatDebugCommand extends BaseCommand {
 			| CommandChannel
 			| ResolvedRole
 			| { id: string };
-		let error: string;
 
 		if (!ctx.guildID && ["role","guild"].includes(subCommand)) {
 			return `</${this.commandName} ${subCommand}:${this.ids.get(
@@ -141,13 +140,6 @@ export default class ChatDebugCommand extends BaseCommand {
 				rawPayload = ctx.data.guild as { id: string };
 				break;
 			}
-		}
-
-		if (error) {
-			return {
-				content: error,
-				ephemeral: true,
-			};
 		}
 
 		const targetID = "user" in rawPayload ? rawPayload.user.id : rawPayload.id;
