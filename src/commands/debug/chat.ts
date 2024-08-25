@@ -111,7 +111,7 @@ export default class ChatDebugCommand extends BaseCommand {
 			| { id: string };
 		let error: string;
 
-		if (!ctx.guildID && subCommand === "role") {
+		if (!ctx.guildID && ["role","guild"].includes(subCommand)) {
 			return `</${this.commandName} ${subCommand}:${this.ids.get(
 				"global",
 			)}> is not in a guild context, you should not be here.`;
