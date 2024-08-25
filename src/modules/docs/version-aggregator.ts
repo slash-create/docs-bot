@@ -110,15 +110,17 @@ export default class VersionAggregator {
 			this.provider.baseStructURL("docs"),
 		);
 
-    if (!res.ok) {
-      if (res.status === 403) {
-        const resetHeader = new Date(+res.headers.get('x-ratelimit-reset') * 1000);
-        if (this.#interval.nextCallAt > resetHeader.getTime())
-          setTimeout(this.refresh, resetHeader.getTime());
-      }
+		if (!res.ok) {
+			if (res.status === 403) {
+				const resetHeader = new Date(
+					+res.headers.get("x-ratelimit-reset") * 1000,
+				);
+				if (this.#interval.nextCallAt > resetHeader.getTime())
+					setTimeout(this.refresh, resetHeader.getTime());
+			}
 
-      return;
-    }
+			return;
+		}
 
 		const data: GitTreeBranchResponse = await res.json();
 
