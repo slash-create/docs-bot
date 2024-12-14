@@ -6,7 +6,7 @@ import {
 } from "slash-create";
 import path from "node:path";
 
-import { hashMapToString, titleCase } from "&common/helpers";
+import { calculateContentLength, hashMapToString, titleCase } from "&common/helpers";
 import registerComponents from "./components";
 
 import { logPrefix, stringResolver } from "&console/context";
@@ -44,8 +44,9 @@ creator.on("commandRun", async (command, promise, ctx) => {
 	)} }`;
 
 	const wrappedTimer = duration();
-	await promise;
-	console.info(`${logPrefix(ctx)} ran ${commandString} in ${wrappedTimer()}`);
+	const res = await promise;
+  const contentLength = res ? `($${calculateContentLength(res)})` : "";
+	console.info(`${logPrefix(ctx)} ran ${commandString} in ${wrappedTimer()} ${contentLength}`);
 });
 
 creator.on("autocompleteInteraction", (ctx, command) => {
