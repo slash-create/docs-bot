@@ -36,4 +36,4 @@ export const GITHUB_WEB_URL = "https://github.com";
 export const GITHUB_API_URL = "https://api.github.com";
 export const GITHUB_RAW_URL = "https://raw.githubusercontent.com";
 
-export const VERSION_REGEX = /v?\d\.\d+\.\d+/;
+export const VERSION_REGEX = /^v?\d\.\d+\.\d+$/;

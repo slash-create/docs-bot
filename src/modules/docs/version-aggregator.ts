@@ -81,6 +81,8 @@ export default class VersionAggregator {
 	}
 
 	getTag(tag: string): TypeNavigator | undefined {
+		if (tag === "latest") tag = this.latestRelease;
+
 		if (this.all.includes(tag) && !this.#navigators.has(tag)) {
 			this.#navigators.set(tag, new TypeNavigator(tag, this));
 		}
@@ -107,7 +109,7 @@ export default class VersionAggregator {
 		this.#deferred = Promise.withResolvers();
 
 		const res = await this.provider.fetchGitHubAPI(
-			this.provider.baseStructURL("docs"),
+			`${this.provider.manifestStructURL(this.provider.repo.manifest.branch)}?recursive=true`,
 		);
 
 		if (!res.ok) {
@@ -133,17 +135,27 @@ export default class VersionAggregator {
 		for (const node of data.tree) {
 			if (node.path.includes("dependabot")) continue;
 			if (!node.path.endsWith(".json")) continue;
+			if (node.path.endsWith(".api.json")) continue;
+			if (this.provider.repo.manifest.folder) {
+				if (!node.path.startsWith(this.provider.repo.manifest.folder)) continue;
+			}
 
-			const tag = node.path.slice(0, -5);
-			const isRelease = VERSION_REGEX.test(tag);
+			let tag = node.path.slice(0, -5); // remove .json
+			if (tag.startsWith(this.provider.repo.manifest.folder))
+				tag = tag.slice(this.provider.repo.manifest.folder.length);
+			if (tag.startsWith("/")) tag = tag.slice(1);
+
+			const isRelease = semver.satisfies(tag, ">=0.0.0");
 
 			const array = isRelease ? this.#releases : this.#branches;
 			array.unshift(tag);
 		}
 
-		this.#releases.sort((v1, v2) => semver.order(v2.slice(1), v1.slice(1)));
+		this.#releases.sort((v1, v2) =>
+			semver.order(v2.replace("v", ""), v1.replace("v", "")),
+		);
 		console.log(
-			`[${this.provider.docsHost}] Loaded ${this.#branches.length} branches & ${this.#releases.length} releases`,
+			`[${this.provider.docs.host}] Loaded ${this.#branches.length} branches & ${this.#releases.length} releases`,
 		);
 
 		this.#ready = true;

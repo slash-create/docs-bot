@@ -2,12 +2,44 @@ import type { TypeNavigator } from "./navigator";
 
 export interface ProviderOptions {
 	label: string;
-	docsHost: string;
-	iconAsset: string;
-	repoLocation: string;
-	embedColor: number;
+
+	docs: DocsHostOptions;
+	repo: DocsRepoOptions;
 	docsURL: (tag: string, descriptor: AnyDescriptor) => string;
-	rawDocsURL: (tag: string, species: string, type: string) => string;
+	partDocsURL: (
+		tag: string,
+		pkg: string,
+		species: string,
+		type: string,
+	) => string;
+}
+
+export interface DocsHostOptions {
+	// https://slash-create.js.org/#/docs/main/{tag}/*
+	// https://discord.js.org/docs/packages/{package}/{tag}/*
+	host: string;
+	package?: string;
+	iconAsset: string;
+
+	embedColor: number;
+	// https://github.com/{owner}/{repo}/tree/{branch}/{path}
+	folder?: string;
+}
+
+export interface DocsRepoOptions {
+	// https://github.com/Snazzah/slash-create/tree/docs/* - self-contained
+	// https://github.com/discordjs/docs/tree/main/{package}/* - monorepo
+	source: {
+		// {owner}/{repo}
+		location: string;
+		folder?: string;
+	};
+	manifest: {
+		location: string;
+		folder?: string;
+		branch: string;
+	};
+	defaultBranch?: string; // "main" / "master"
 }
 
 export type GitHubViewMode = "tree" | "blob" | "blame" | "edit" | "commits";
