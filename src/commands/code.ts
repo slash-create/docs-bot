@@ -1,5 +1,4 @@
 import {
-	ApplicationIntegrationType,
 	ButtonStyle,
 	CommandOptionType,
 	ComponentType,
@@ -105,13 +104,17 @@ export default class CodeCommand extends BaseCommand {
 				const results = focusedOption.length
 					? Provider.filter(focusedOption)
 					: Provider.all.map((provider) => {
-							return { original: provider, string: provider.label };
+							return { original: provider };
 						});
 
-				return results.map((result) => ({
-					name: `${result.original.label} (${result.original.docsHost})`,
-					value: result.string,
-				}));
+				return results
+					.map(({ original: provider }) => {
+						return {
+							name: `${provider.label} (${provider.docs.host})`,
+							value: provider.label,
+						};
+					})
+					.slice(0, 20);
 			}
 			case "version": {
 				const provider = Provider.get(options.library.split("(")[0].trim());
@@ -219,7 +222,7 @@ export default class CodeCommand extends BaseCommand {
 		}
 
 		const res = await typeNavigator.aggregator.provider.fetchGitHubRaw(
-			typeNavigator.rawFileURL(file),
+			typeNavigator.aggregator.provider.rawRepoURL(file),
 		);
 		const body = await res.text();
 		const lines = body.split("\n");

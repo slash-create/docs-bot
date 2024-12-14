@@ -14,37 +14,37 @@
  *   .build()
  */
 function expires() {
-  let key: string;
+	let key: string;
 
-  const context = { branch: 0, tag: 0, latest: 0 };
+	const context = { branch: 0, tag: 0, latest: 0 };
 
-  const handler: ProxyHandler<typeof context> = {
-    get(target, prop) {
-      if (prop === 'branch' || prop === 'tag' || prop === 'latest') {
-        key = prop;
-        return new Proxy(this, handler);
-      }
+	const handler: ProxyHandler<typeof context> = {
+		get(target, prop) {
+			if (prop === "branch" || prop === "tag" || prop === "latest") {
+				key = prop;
+				return new Proxy(this, handler);
+			}
 
-      if (prop === 'hours') {
-        context[key] *= 60;
-      }
+			if (prop === "hours") {
+				context[key] *= 60;
+			}
 
-      if (prop === 'minutes') {
-        context[key] *= 60;
-      }
+			if (prop === "minutes") {
+				context[key] *= 60;
+			}
 
-      if (prop === 'seconds') {
-        context[key] *= 60;
-      }
-    },
-    apply(target, thisArg, argArray) {
-      if (key === 'build') {
-        return Object.freeze({ ...context });
-      }
+			if (prop === "seconds") {
+				context[key] *= 60;
+			}
+		},
+		apply(target, thisArg, argArray) {
+			if (key === "build") {
+				return Object.freeze({ ...context });
+			}
 
-      return this;
-    }
-  };
+			return this;
+		},
+	};
 
-  return new Proxy(context, handler);
+	return new Proxy(context, handler);
 }

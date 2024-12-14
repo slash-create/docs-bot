@@ -1,4 +1,5 @@
 import { type MessageOptions, User } from "slash-create";
+import type { MessageCharacterCount } from "./types";
 
 export function capitalize(str: string): string {
 	return str.charAt(0).toUpperCase() + str.slice(1);
@@ -67,4 +68,87 @@ export function isEmpty(val: unknown) {
 	const empties: unknown[] = [null, undefined, "", Number.NaN] as const;
 
 	return empties.includes(val);
+}
+
+export function calculateContentLength(message: MessageOptions) {
+	let total = 0;
+
+	total += message.content?.length ?? 0;
+
+	for (const embed of message.embeds ?? []) {
+		total += embed.title?.length ?? 0;
+		total += embed.description?.length ?? 0;
+		total += embed.url?.length ?? 0;
+		total += embed.footer.text?.length ?? 0;
+
+		for (const field of embed.fields ?? []) {
+			total += field.name?.length ?? 0;
+			total += field.value?.length ?? 0;
+		}
+	}
+
+	return total;
+}
+
+export function debugContentLength(message: MessageOptions) {
+	const totals: Partial<MessageCharacterCount> = {
+		embeds: [],
+	};
+
+	totals.content = message.content?.length ?? 0;
+
+	for (const embed of message.embeds ?? []) {
+		const embedTotals: Partial<(typeof totals)["embeds"][number]> = {
+			fields: [],
+		};
+
+		embedTotals.title = embed.title?.length ?? 0;
+		embedTotals.description = embed.description?.length ?? 0;
+		embedTotals.url = embed.url?.length ?? 0;
+		embedTotals.footer = embed.footer.text?.length ?? 0;
+
+		for (const field of embed.fields ?? []) {
+			const fieldTotals: Partial<(typeof embedTotals)["fields"][number]> = {};
+
+			fieldTotals.name = field.name?.length ?? 0;
+			fieldTotals.value = field.value?.length ?? 0;
+			fieldTotals.$total = fieldTotals.name + fieldTotals.value;
+
+			embedTotals.fields.push(fieldTotals);
+		}
+
+		embedTotals.$total =
+			embedTotals.title +
+			embedTotals.description +
+			embedTotals.url +
+			embedTotals.footer +
+			embedTotals.fields.reduce((acc, field) => acc + field.$total, 0);
+
+		totals.embeds.push(embedTotals);
+	}
+
+	totals.$total =
+		totals.content +
+		totals.embeds.reduce((acc, embed) => acc + embed.$total, 0);
+
+	return totals;
+}
+
+export function trimUntilAccumulatedLength(
+	maxLength: number,
+	strings: string[],
+	addMessage: boolean,
+) {
+	let trimmed = 0;
+	const total = () => strings.reduce((acc, str) => acc + str.length, 0);
+	const getMsg = () => `... and ${trimmed} more.`;
+
+	while (total() + getMsg().length >= maxLength) {
+		trimmed++;
+		strings.pop();
+	}
+
+	if (trimmed && addMessage) strings.push(getMsg());
+
+	return strings;
 }

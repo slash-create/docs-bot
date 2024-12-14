@@ -2,64 +2,105 @@ import { capitalize } from "&common/helpers";
 import { filter } from "fuzzy";
 
 import { GITHUB_API_URL, GITHUB_RAW_URL, GITHUB_WEB_URL } from "./constants";
-import type { AnyDescriptor, GitHubViewMode, ProviderOptions } from "./types";
+import type {
+	AnyDescriptor,
+	DocsHostOptions,
+	DocsRepoOptions,
+	GitHubViewMode,
+	ProviderOptions,
+} from "./types";
 import VersionAggregator from "./version-aggregator";
 import RequestQuota from "&console/request-quota";
+import { TIME } from "&common/constants";
 
 export class Provider implements ProviderOptions {
 	aggregator: VersionAggregator;
 
+	// {cacheKey(req: RequestInfo | URL): string} -> Promise<Response>
+	static cache: Map<URL, { response: Response; fetchedAt: number }> = new Map();
+
 	label: string;
-	docsHost: string;
-	iconAsset: string;
-	repoLocation: string;
-	embedColor: number;
+
+	docs: DocsHostOptions;
+	repo: DocsRepoOptions;
+
 	docsURL: (this: this, tag: string, descriptor: AnyDescriptor) => string;
-	rawDocsURL: (
+	partDocsURL: (
 		this: this,
 		tag: string,
 		species: string,
 		type: string,
 	) => string;
 
-	private constructor(options: ProviderOptions) {
+	constructor(options: ProviderOptions) {
 		this.label = options.label;
-		this.docsHost = options.docsHost;
-		this.iconAsset = options.iconAsset;
-		this.repoLocation = options.repoLocation;
-		this.embedColor = options.embedColor;
+		this.docs = options.docs;
+		this.repo = options.repo;
 		this.docsURL = options.docsURL.bind(this);
-		this.rawDocsURL = options.rawDocsURL.bind(this);
+		this.partDocsURL = options.partDocsURL.bind(this);
 
 		this.aggregator = new VersionAggregator(this);
+		Provider.all.push(this);
 	}
 
-	baseRepoURL(ref = "master", view: GitHubViewMode = "tree") {
+	webRepoURL(ref = this.repo.defaultBranch, view: GitHubViewMode = "tree") {
 		if (ref === "latest") ref = this.aggregator.latestRelease;
-		return `${GITHUB_WEB_URL}/${this.repoLocation}/${view}/${ref}`;
+		let path = `${GITHUB_WEB_URL}/${this.repo.source.location}/${view}/${ref}`;
+		if (this.repo.source.folder) path += `/${this.repo.source.folder}`;
+		return path;
 	}
 
-	baseStructURL(ref = "master") {
+	baseStructURL(target: "source" | "manifest", ref = this.repo.defaultBranch) {
 		if (ref === "latest") ref = this.aggregator.latestRelease;
-		return `${GITHUB_API_URL}/repos/${this.repoLocation}/git/trees/${ref}`;
+		return `${GITHUB_API_URL}/repos/${this.repo[target].location}/git/trees/${ref}`;
+		// if (this.repo[target].folder) path += `/${this.repo[target].folder}`;
 	}
 
-	baseRawURL(ref = "master") {
+	sourceStructURL = (ref = this.repo.defaultBranch) =>
+		this.baseStructURL("source", ref);
+	manifestStructURL = (ref = this.repo.defaultBranch) =>
+		this.baseStructURL("manifest", ref);
+
+	baseRawURL(
+		target: "source" | "manifest",
+		ref = this.repo.defaultBranch,
+		file?: string,
+	) {
 		if (ref === "latest") ref = this.aggregator.latestRelease;
-		return `${GITHUB_RAW_URL}/${this.repoLocation}/${ref}`;
+		let path = `${GITHUB_RAW_URL}/${this.repo[target].location}/${ref}`;
+		if (this.repo[target].folder) path += `/${this.repo[target].folder}`;
+		if (file) path += `/${file}`;
+		return path;
 	}
 
-	fetchGitHubAPI(endpoint: string, method = "GET"): Promise<Response> {
-		return this.#fetchGitHubCommon(new URL(endpoint, GITHUB_API_URL), method);
+	rawRepoURL = (file?: string, ref = this.repo.defaultBranch) =>
+		this.baseRawURL("source", ref, file);
+	rawDocsURL = (file?: string, ref = this.repo.manifest.branch) =>
+		this.baseRawURL("manifest", ref, file);
+
+	fetchGitHubAPI(
+		endpoint: string,
+		options: RequestInit = { method: "GET" },
+	): Promise<Response> {
+		return this.#fetchGitHubCommon(new URL(endpoint, GITHUB_API_URL), options);
 	}
 
-	fetchGitHubRaw(endpoint: string, method = "GET"): Promise<Response> {
-		return this.#fetchGitHubCommon(new URL(endpoint, GITHUB_RAW_URL), method);
+	fetchGitHubRaw(
+		endpoint: string,
+		options: RequestInit = { method: "GET" },
+	): Promise<Response> {
+		return this.#fetchGitHubCommon(new URL(endpoint, GITHUB_RAW_URL), options);
 	}
 
-	async #fetchGitHubCommon(url: URL, method: string): Promise<Response> {
+	async #fetchGitHubCommon(url: URL, options: RequestInit): Promise<Response> {
+		if (Provider.cache.has(url)) {
+			const cached = Provider.cache.get(url);
+			console.log(`Provider(${this.label}) Cache hit`, url, cached.fetchedAt);
+			if (cached.fetchedAt > Date.now() - TIME.MINUTE) return cached.response;
+		}
+
 		const res = await fetch(url, {
-			method,
+			...options,
 			...(process.env.GITHUB_API_TOKEN && {
 				headers: {
 					Authorization: `Bearer ${process.env.GITHUB_API_TOKEN}`,
@@ -68,7 +109,7 @@ export class Provider implements ProviderOptions {
 		});
 
 		if (res.status > 400 && res.status < 600) {
-			console.error(this.label, res.status, res.statusText);
+			console.error(this.label, res.url, res.status, res.statusText);
 			if (res.status === 403) {
 				const resetHeader = new Date(
 					+res.headers.get("x-ratelimit-reset") * 1000,
@@ -79,18 +120,17 @@ export class Provider implements ProviderOptions {
 
 		RequestQuota.patch(res.headers);
 
+		Provider.cache.set(url, { response: res, fetchedAt: Date.now() });
+
 		return res;
 	}
 
 	get iconURL() {
-		if (this.iconAsset.startsWith("https://")) return this.iconAsset;
-		return `${this.baseRawURL()}/${this.iconAsset}`;
+		if (this.docs.iconAsset.startsWith("https://")) return this.docs.iconAsset;
+		return `${this.rawRepoURL()}/${this.docs.iconAsset}`;
 	}
 
-	static readonly sharedBuilders: Record<
-		string,
-		Pick<ProviderOptions, "docsURL" | "rawDocsURL">
-	> = {
+	static readonly sharedBuilders = {
 		slashCreate: {
 			docsURL(this: Provider, tag: string, descriptor: AnyDescriptor) {
 				let path = descriptor.name;
@@ -103,10 +143,10 @@ export class Provider implements ProviderOptions {
 					species = descriptor.parent.species;
 				}
 
-				return `https://${this.docsHost}/#/docs/main/${tag}/${species}/${path}`;
+				return `https://${this.docs.host}/#/docs/main/${tag}/${species}/${path}`;
 			},
-			rawDocsURL(this: Provider, tag: string, species: string, type: string) {
-				return `https://${this.docsHost}/#/docs/main/${tag}/${species}/${type}`;
+			partDocsURL(this: Provider, tag: string, species: string, type: string) {
+				return `https://${this.docs.host}/#/docs/main/${tag}/${species}/${type}`;
 			},
 		},
 		discordJS: {
@@ -119,55 +159,108 @@ export class Provider implements ProviderOptions {
 					)}#${path}`;
 				else path += `:${capitalize(descriptor.species)}`;
 
-				// infer docsHost as "discordjs.dev/docs/packages"
-				return `https://${this.docsHost}/${tag}/${path}`;
+				return `https://${this.docs.host}/docs/packages/${this.docs.package ?? this.label}/${tag}/${path}`;
 			},
-			rawDocsURL(this: Provider, tag: string, species: string, type: string) {
+			partDocsURL(this: Provider, tag: string, species: string, type: string) {
 				const [parent, child] = type.split("#");
-				return `https://${this.docsHost}/${tag}/${parent}:${capitalize(
+				return `https://${this.docs.host}/docs/packages/${this.docs.package ?? this.label}/${tag}/${parent}:${capitalize(
 					species,
 				)}#${child}`;
 			},
 		},
-	};
+	} satisfies Record<string, Pick<ProviderOptions, "docsURL" | "partDocsURL">>;
+
+	static all: Provider[] = [];
 
 	static readonly dbots = new Provider({
 		label: "dbots.js",
-		docsHost: "dbots.js.org",
-		iconAsset: "static/logo.png",
-		repoLocation: "dbots-pkg/dbots.js",
-		embedColor: 0xf5771f, // Orange
+		docs: {
+			host: "dbots.js.org",
+			iconAsset: "static/logo.png",
+			embedColor: 0xf5771f, // Orange
+		},
+		repo: {
+			source: {
+				location: "dbots-pkg/dbots.js",
+			},
+			manifest: {
+				location: "dbots-pkg/dbots.js",
+				branch: "docs",
+			},
+			defaultBranch: "master",
+		},
 		...this.sharedBuilders.slashCreate,
 	});
 
 	static readonly dbotHook = new Provider({
 		label: "dbothook.js",
-		docsHost: "dbothook.js.org",
-		iconAsset: "static/logo.png",
-		repoLocation: "dbots-pkg/dbothook.js",
-		embedColor: 0xf5771f, // Orange
+		docs: {
+			host: "dbothook.js.org",
+			iconAsset: "static/logo.png",
+			embedColor: 0xf5771f, // Orange
+		},
+		repo: {
+			source: {
+				location: "dbots-pkg/dbothook.js",
+			},
+			manifest: {
+				location: "dbots-pkg/dbothook.js",
+				branch: "docs",
+			},
+			defaultBranch: "master",
+		},
 		...this.sharedBuilders.slashCreate,
 	});
 
 	static readonly slashCreate = new Provider({
 		label: "slash-create",
-		docsHost: "slash-create.js.org",
-		iconAsset: "https://github.com/slash-create.png",
-		repoLocation: "Snazzah/slash-create",
-		embedColor: 0xf31231, // Crimson / Torch Red
+		docs: {
+			host: "slash-create.js.org",
+			iconAsset: "https://github.com/slash-create.png",
+			embedColor: 0xf31231, // Crimson / Torch Red
+		},
+		repo: {
+			source: {
+				location: "Snazzah/slash-create",
+			},
+			manifest: {
+				location: "Snazzah/slash-create",
+				branch: "docs",
+			},
+			defaultBranch: "master",
+		},
 		...this.sharedBuilders.slashCreate,
 	});
 
-	static get all() {
-		return [Provider.dbots, Provider.dbotHook, Provider.slashCreate];
-	}
+	static readonly discordJs = new Provider({
+		label: "discord.js",
+		docs: {
+			host: "discord.js.org",
+			iconAsset:
+				"https://raw.githubusercontent.com/discordjs/discord.js/main/apps/website/public/apple-touch-icon.png",
+			embedColor: 0x7289da, // (Old) Blurple
+		},
+		repo: {
+			source: {
+				location: "discordjs/discord.js",
+				folder: "packages/discord.js",
+			},
+			manifest: {
+				location: "discordjs/docs",
+				branch: "main",
+				folder: "discord.js",
+			},
+			defaultBranch: "main",
+		},
+		...this.sharedBuilders.discordJS,
+	});
 
 	static get list() {
 		return Provider.all.map((provider) => provider.label);
 	}
 
 	static filter(query: string) {
-		return filter(query, Provider.list);
+		return filter(query, Provider.all, { extract: (input) => input.label });
 	}
 
 	static get map() {
@@ -183,12 +276,13 @@ export default {
 	dbots: Provider.dbots,
 	dbotHook: Provider.dbotHook,
 	slashCreate: Provider.slashCreate,
+	discordJs: Provider.discordJs,
 	filter: Provider.filter,
 	map: Provider.map,
 	get: Provider.get,
 };
 
-//await Provider.slashCreate.aggregator.onReady;
-//const typeNavigator = Provider.slashCreate.aggregator.getTag('v6.1.2');
-//await typeNavigator.onReady;
-//console.log(typeNavigator.knownFiles);
+// await Provider.discordJs.aggregator.onReady;
+// const typeNavigator = Provider.discordJs.aggregator.getTag(Provider.discordJs.aggregator.latestRelease);
+// await typeNavigator.onReady;
+// console.log(typeNavigator.map);

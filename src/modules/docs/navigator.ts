@@ -76,11 +76,11 @@ export class TypeNavigator {
 	}
 
 	get #targetURI() {
-		return `${this.aggregator.provider.baseRawURL("docs")}/${this.tag}.json`;
+		return `${this.aggregator.provider.rawDocsURL(void 0, this.aggregator.provider.repo.manifest.branch)}/${this.tag}.json`;
 	}
 
 	baseRepoURL(view: GitHubViewMode = "tree") {
-		return this.aggregator.provider.baseRepoURL(this.tag, view);
+		return this.aggregator.provider.webRepoURL(this.tag, view);
 	}
 
 	codeFileURL(file: string, lineRange: [number, number?]) {
@@ -92,8 +92,8 @@ export class TypeNavigator {
 		return `${this.baseRepoURL("blob")}/${file}#${lineString}`;
 	}
 
-	rawFileURL(file: string) {
-		return `${this.aggregator.provider.baseRawURL(this.tag)}/${file}`;
+	rawFileURL(file: string, target: "source" | "manifest" = "source") {
+		return `${this.aggregator.provider.rawRepoURL(void 0, this.tag)}/${file}`;
 	}
 
 	docsURL(descriptor: AnyDescriptor) {
@@ -101,7 +101,7 @@ export class TypeNavigator {
 	}
 
 	rawDocsURL(species: string, type: string) {
-		return this.aggregator.provider.rawDocsURL(this.tag, species, type);
+		return this.aggregator.provider.partDocsURL(this.tag, species, type);
 	}
 
 	static joinKey(entryPath: string[], connector: string) {
@@ -164,8 +164,14 @@ export class TypeNavigator {
 		defineCommon(this, descriptorType, descriptor);
 
 		this.map.set(descriptor.toString(), descriptor);
-		if ("path" in descriptor.meta)
+		if ("path" in descriptor.meta) {
+			if (this.aggregator.provider.repo.manifest.folder)
+				descriptor.meta.path = descriptor.meta.path.slice(
+					this.aggregator.provider.repo.source.folder.length,
+				);
+
 			this.#registerKnownFile([descriptor.meta.path, descriptor.meta.file]);
+		}
 
 		const pairs = {
 			Event: "events",

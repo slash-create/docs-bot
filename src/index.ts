@@ -3,8 +3,6 @@ import {
 	CommandOptionType,
 	type ApplicationCommandOption,
 	BunServer,
-	ChannelType,
-	BaseInteractionContext,
 } from "slash-create";
 import path from "node:path";
 
@@ -145,3 +143,13 @@ await Promise.allSettled(
 	Provider.all.map((provider) => provider.aggregator.onReady),
 );
 RequestQuota.debug();
+
+process.on("uncaughtException", (error, origin) => {
+	console.log(JSON.stringify(error));
+	console.log(error);
+	console.log(origin);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+	console.log(reason);
+});

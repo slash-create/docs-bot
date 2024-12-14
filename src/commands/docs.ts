@@ -13,7 +13,11 @@ import {
 	type SlashCreator,
 } from "slash-create";
 
-import { ephemeralResponse as _ } from "&common/helpers";
+import {
+	ephemeralResponse as _,
+	debugContentLength,
+	trimUntilAccumulatedLength,
+} from "&common/helpers";
 import BaseCommand from "&discord/base-command";
 import {
 	libraryOption,
@@ -75,7 +79,7 @@ export default class DocumentationCommand extends BaseCommand {
 				return filter(options.library ?? "", Provider.all, {
 					extract: (input) => input.label,
 				}).map((result) => ({
-					name: `${result.original.label} (${result.original.docsHost})`,
+					name: `${result.original.label} (${result.original.docs.host})`,
 					value: result.string,
 				}));
 			}
@@ -160,6 +164,7 @@ export default class DocumentationCommand extends BaseCommand {
 		const typeNavigator = provider.aggregator.getTag(
 			(options.version ?? "latest").split("(")[0].trim(),
 		);
+    
 		if (!typeNavigator) return _(responses.unknown.name);
 		if (!typeNavigator.ready) {
 			await ctx.defer(!options.share);
@@ -172,13 +177,13 @@ export default class DocumentationCommand extends BaseCommand {
 		if (!descriptor) return _("Entity was `null`, please check arguments.");
 
 		const embed: MessageEmbedOptions = {
-			color: provider.embedColor,
+			color: provider.docs.embedColor,
 			title: `\`${descriptor.toString()}\``,
 			url: typeNavigator.docsURL(descriptor),
 			fields: [],
 			timestamp: new Date(ctx.invokedAt),
 			footer: {
-				text: `${provider.label} 🏷️ ${typeNavigator.tag} (🌐 ${provider.docsHost})`,
+				text: `${provider.label} 🏷️ ${typeNavigator.tag} (🌐 ${provider.docs.host})`,
 				icon_url: provider.iconURL,
 			},
 		};
@@ -334,7 +339,16 @@ export default class DocumentationCommand extends BaseCommand {
 						.join("\n") || "None",
 				inline: true,
 			},
-		].filter((field) => field && field.value !== "None");
+		]
+			.filter((field) => field && field.value !== "None")
+			.map((field) => ({
+				...field,
+				value: trimUntilAccumulatedLength(
+					900,
+					field.value.split("\n"),
+					true,
+				).join("\n"),
+			}));
 
 	private parseDocString = (
 		navigator: TypeNavigator,
@@ -352,7 +366,7 @@ export default class DocumentationCommand extends BaseCommand {
 			.flat(2)
 			.map((fragment) => {
 				if (navigator.map.has(fragment))
-					return `[${fragment}](${navigator.aggregator.provider.rawDocsURL(
+					return `[${fragment}](${navigator.aggregator.provider.partDocsURL(
 						navigator.tag,
 						"typedef",
 						fragment,
