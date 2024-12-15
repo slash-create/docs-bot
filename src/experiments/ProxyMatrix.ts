@@ -8,9 +8,9 @@
  *
  * @example
  * Expires.with()
- *   .branch.after(3).hours()
- *   .tag.after(30).minutes()
- *   .latest.after(2).minutes()
+ *   .branch.after(3).hours
+ *   .tag.after(30).minutes
+ *   .latest.after(2).minutes
  *   .build()
  */
 export class Expires {
