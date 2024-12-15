@@ -43,7 +43,19 @@ export class Expires {
   get latest() { return this.#proxy('latest') }
 
   build() {
-    return this.#data;
+    const self = this;
+    return Object.assign(this.#data, {
+      get total() {
+        let acc = 0;
+        for (const [key, value] of Object.entries(self.#data)) {
+          acc += value;
+        }
+        return acc;
+      },
+      valueOf() {
+        return this.total;
+      }
+    });
   }
 }
 
