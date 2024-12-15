@@ -7,44 +7,45 @@
  * If the proxy call follows with 'build', it returns the object inside the proxy - ending the chain.
  *
  * @example
- * expires()
- *   .branch(3).hours()
- *   .tag(30).minutes()
- *   .latest(2).minutes()
+ * Expires.with()
+ *   .branch.after(3).hours()
+ *   .tag.after(30).minutes()
+ *   .latest.after(2).minutes()
  *   .build()
  */
-function expires() {
-	let key: string;
+export class Expires {
+  static with() { return new Expires() }
 
-	const context = { branch: 0, tag: 0, latest: 0 };
+  #data: Record<string, number> = {};
 
-	const handler: ProxyHandler<typeof context> = {
-		get(target, prop) {
-			if (prop === "branch" || prop === "tag" || prop === "latest") {
-				key = prop;
-				return new Proxy(this, handler);
-			}
+  #patch(payload: Partial<Record<string, number>>) {
+    this.#data = { ...this.#data, ...payload };
+    return this;
+  }
 
-			if (prop === "hours") {
-				context[key] *= 60;
-			}
+  #proxy(target: string) {
+    const self = this;
+    return {
+      after(quantity: number): TimeUnitSelector {
+        return {
+          get seconds() { return self.#patch({ [target]: quantity }) },
+          get minutes() { return self.#patch({ [target]: quantity * 60 }) },
+          get hours() { return self.#patch({ [target]: quantity * 60 * 60 }) },
+          get days() { return self.#patch({ [target]: quantity * 60 * 60 * 24 }) },
+          get weeks() { return self.#patch({ [target]: quantity * 60 * 60 * 24 * 7 }) },
+        }
+      }
+    }
+  }
 
-			if (prop === "minutes") {
-				context[key] *= 60;
-			}
+  get branch() { return this.#proxy('branch') }
+  get tag() { return this.#proxy('tag') }
+  get latest() { return this.#proxy('latest') }
 
-			if (prop === "seconds") {
-				context[key] *= 60;
-			}
-		},
-		apply(target, thisArg, argArray) {
-			if (key === "build") {
-				return Object.freeze({ ...context });
-			}
-
-			return this;
-		},
-	};
-
-	return new Proxy(context, handler);
+  build() {
+    return this.#data;
+  }
 }
+
+type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks';
+type TimeUnitSelector = Record<TimeUnit, Expires>;
