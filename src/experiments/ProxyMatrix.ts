@@ -61,3 +61,15 @@ export class Expires {
 
 type TimeUnit = 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks';
 type TimeUnitSelector = Record<TimeUnit, Expires>;
+
+// Only run this code if this file is executed as a script
+if (import.meta.main) {
+  const expires = Expires.with()
+    .branch.after(3).hours
+    .tag.after(30).minutes
+    .latest.after(2).minutes
+    .build();
+
+  console.log("immediate", expires);
+  console.log("valueOf", +expires);
+}
