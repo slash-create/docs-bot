@@ -140,10 +140,12 @@ export function trimUntilAccumulatedLength(
 	addMessage: boolean,
 ) {
 	let trimmed = 0;
-	const total = () => strings.reduce((acc, str) => acc + str.length, 0);
 	const getMsg = () => `... and ${trimmed} more.`;
+	const total = () =>
+		strings.reduce((acc, str) => acc + str.length, 0) +
+		(trimmed && addMessage ? getMsg().length : 0);
 
-	while (total() + getMsg().length >= maxLength) {
+	while (total() >= maxLength) {
 		trimmed++;
 		strings.pop();
 	}
