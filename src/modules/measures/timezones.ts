@@ -58,7 +58,7 @@ export function offsetTimeTo(timeZone: string, date: Date) {
  * @param timeZone Provide as a IANA identifier.
  * @returns The timezone offset relative to UTC.
  */
-export function offsetOf(timeZone) {
+export function offsetOf(timeZone: string) {
 	const now = new Date();
 
 	return Math.round(
@@ -69,4 +69,4 @@ export function offsetOf(timeZone) {
 	);
 }
 
-export const serverOffset = offsetOf("+01:00");
+export const serverOffset = offsetOf("+00:00");
