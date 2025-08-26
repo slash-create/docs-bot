@@ -99,7 +99,7 @@ class StarSign implements IStarSign {
   public static find(query: string, key: 'name' | 'latin' | 'emoji' = 'name'): StarSign | undefined {
     return StarSign.#instances.find((value) => value[key] === query);
   }
-
+  
   public static resolve(query: Date | number): StarSign {
     const date = new Date(query);
     const initial = StarSign.#instances[date.getMonth()];
@@ -129,10 +129,13 @@ class StarSign implements IStarSign {
     StarSign.#from('Sagittarius', 'Archer', '♐', 11, 21); // Nov 22 - Dec 21
   }
 
+  static #interval: FixedInterval;
+
   static #setupInterval() {
+    // Prevent running multiple intervals in test environment
     if (import.meta.main) return;
 
-    const interval = new FixedInterval(TIME.HOUR, 0, false, () => {
+    StarSign.#interval = new FixedInterval(TIME.HOUR, 0, false, () => {
       // Update the year for all instances, when the new year while this deployment is running
       const currentYear = new Date().getFullYear();
 
@@ -144,7 +147,7 @@ class StarSign implements IStarSign {
     })
 
     process.on('beforeExit', () => {
-      interval.destroy();
+      StarSign.#interval.destroy();
     });
   }
 }
