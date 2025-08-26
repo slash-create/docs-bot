@@ -54,7 +54,7 @@ class StarSign implements IStarSign {
   public nextOver(months: number) {
     let sign: StarSign = this;
 
-    if (months < 0) throw new Error('Months must be a positive number');
+    if (months < 0) return this.prevOver(-months);
 
     for (let i = 0; i < months; i++) {
       sign = sign.next;
@@ -72,7 +72,7 @@ class StarSign implements IStarSign {
   public prevOver(months: number) {
     let sign: StarSign = this;
 
-    if (months < 0) throw new Error('Months must be a positive number');
+    if (months < 0) return this.nextOver(-months);
 
     for (let i = 0; i < months; i++) {
       sign = sign.prev;
@@ -99,7 +99,7 @@ class StarSign implements IStarSign {
   public static find(query: string, key: 'name' | 'latin' | 'emoji' = 'name'): StarSign | undefined {
     return StarSign.#instances.find((value) => value[key] === query);
   }
-  
+
   public static resolve(query: Date | number): StarSign {
     const date = new Date(query);
     const initial = StarSign.#instances[date.getMonth()];
