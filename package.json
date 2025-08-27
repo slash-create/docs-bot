@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "format": "biome format --write ./src/*",
-    "lint": "biome lint --apply ./src/*",
+    "lint": "biome lint ./src/*",
     "sync": "slash-up sync",
     "sync:dev": "slash-up sync -e development",
     "start": "bun ./src/index.ts",

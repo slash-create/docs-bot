@@ -15,10 +15,12 @@ import { commandTypeStrings } from "&discord/constants";
 import { displayUser, getCommandInfo } from "&discord/helpers";
 import RequestQuota from "&console/request-quota";
 import { Provider } from "&docs/source";
+import { logger } from "./archive/util/logger";
+import { sendPanicMessage } from "&discord/panic-message";
 
 console.time("Startup");
 
-const creator = new SlashCreator({
+export const creator = new SlashCreator({
 	applicationID: process.env.DISCORD_APP_ID,
 	publicKey: process.env.DISCORD_PUBLIC_KEY,
 	token: process.env.DISCORD_BOT_TOKEN,
@@ -117,6 +119,11 @@ creator.on("commandRegister", async (command) => {
 		);
 });
 
+creator.on('error', (error) => {
+  logger.error(error);
+  sendPanicMessage(creator, `${error.message}\n\n\`\`\`${error.stack}\`\`\``).catch(() => null);
+});
+
 creator.on("commandError", (command, error) =>
 	console.error(`Command ${command.commandName}:`, error),
 );
@@ -145,7 +152,7 @@ await Promise.allSettled(
 );
 RequestQuota.debug();
 
-process.on("uncaughtException", (error, origin) => {
+process.on("uncaughtException", async (error, origin) => {
 	console.log(JSON.stringify(error));
 	console.log(error);
 	console.log(origin);
