@@ -141,25 +141,20 @@ class StarSign implements IStarSign {
     StarSign.#from('Sagittarius', 'Archer', '♐', 11, 21); // Nov 22 - Dec 21
   }
 
-  static #interval: FixedInterval;
-
   static #setupInterval() {
     // Prevent running multiple intervals in test environment
     if (import.meta.main) return;
 
-    StarSign.#interval = new FixedInterval(TIME.HOUR, 0, false, () => {
+    const interval = new FixedInterval(TIME.HOUR, 0, false, () => {
       // Update the year for all instances, when the new year while this deployment is running
-      const currentYear = new Date().getFullYear();
-
-      if (StarSign.year === currentYear) return;
-
+      if (StarSign.year === StarSign.#instances[0].year) return;
       for (const sign of StarSign.#instances) {
-        sign.year = currentYear;
+        sign.year = StarSign.year;
       }
     })
 
     process.on('beforeExit', () => {
-      StarSign.#interval.destroy();
+      interval.destroy();
     });
   }
 }
