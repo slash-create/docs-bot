@@ -21,3 +21,26 @@ export async function sendPanicMessage(
     },
   }).catch(() => null);
 }
+
+export async function sendPanicMessageWithoutCreator(
+  message: string,
+) {
+  if (!panicChannelID || !process.env.DISCORD_BOT_TOKEN) return;
+
+  return await fetch(`https://discord.com/api/v10/channels/${panicChannelID}/messages`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      content: `:warning: **PANIC** :warning:\n\n${message}`,
+      components: [
+        {
+          type: 1,
+          components: [deleteComponent],
+        },
+      ],
+    }),
+  }).catch(() => null);
+}

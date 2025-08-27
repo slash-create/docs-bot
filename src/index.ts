@@ -152,11 +152,13 @@ await Promise.allSettled(
 RequestQuota.debug();
 
 process.on("uncaughtException", async (error, origin) => {
+  sendPanicMessage(creator, `Uncaught Exception (${origin}): ${error.message}\n\n\`\`\`${error.stack}\`\`\``).catch(() => null);
 	console.log(JSON.stringify(error));
 	console.log(error);
 	console.log(origin);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
+  sendPanicMessage(creator, `Unhandled Rejection: ${JSON.stringify(reason)}`).catch(() => null);
 	console.log(reason);
 });
