@@ -269,6 +269,12 @@ export default class TemporalCommand extends BaseCommand {
   #stylePredicate = (style: TimeStyle) => (date: number | Date) =>
     time(date, style);
 
+  #parseInstant = (input: string | number) => typeof input === "number"
+    ? new Date(input)
+    : /^\d+$/.test(input)
+      ? new Date(+input)
+      : new Date(Date.parse(input));
+
   // https://stackoverflow.com/a/15397495
   #ordinal = (n: number) => {
     if (n > 3 && n < 21) return `${n}th`;
@@ -349,7 +355,7 @@ export default class TemporalCommand extends BaseCommand {
         ];
 
         if (instant) {
-          const dateInstant = new Date(instant);
+          const dateInstant = this.#parseInstant(instant ?? ctx.invokedAt);
 
           results.unshift({
             name: intlDate.format(dateInstant),
@@ -414,13 +420,7 @@ export default class TemporalCommand extends BaseCommand {
       return `\`${options.timezone}\` is not a valid IANA timezone identifier.`;
     }
 
-    const invokedTime =
-      options.instant !== undefined ? new Date(
-          /^\d+$/.test(options.instant)
-            ? +options.instant
-            : Date.parse(options.instant)
-        )
-        : new Date(ctx.invokedAt);
+    const invokedTime = this.#parseInstant(options.instant ?? ctx.invokedAt)
 
     const referenceString =
       "instant" in options ? "instant occured" : "command was invoked";
@@ -568,7 +568,7 @@ export default class TemporalCommand extends BaseCommand {
       timezone,
     } = options;
 
-    const dateInstant = new Date(instant ?? ctx.invokedAt);
+    const dateInstant = this.#parseInstant(instant ?? ctx.invokedAt);
     const adjustedTimezone =
       !isEmpty(timezone) && timezone.includes("(")
         ? timezone.split(" ").at(0)
@@ -751,7 +751,7 @@ interface TemporalOccuranceOptions {
 interface TemporalParseOptions {
   query: string;
   discord?: boolean;
-  instant?: number; // = {invokedAt}
+  instant?: string; // = {invokedAt}
   forward_date?: boolean; // = true
   select?: /* = */ "first" | "last"; // = 'first'
   count?: number; // = 3
