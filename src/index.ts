@@ -15,7 +15,6 @@ import { commandTypeStrings } from "&discord/constants";
 import { displayUser, getCommandInfo } from "&discord/helpers";
 import RequestQuota from "&console/request-quota";
 import { Provider } from "&docs/source";
-import { logger } from "./archive/util/logger";
 import { sendPanicMessage } from "&discord/panic-message";
 
 console.time("Startup");
@@ -120,7 +119,7 @@ creator.on("commandRegister", async (command) => {
 });
 
 creator.on('error', (error) => {
-  logger.error(error);
+  console.error(error);
   sendPanicMessage(creator, `${error.message}\n\n\`\`\`${error.stack}\`\`\``).catch(() => null);
 });
 
