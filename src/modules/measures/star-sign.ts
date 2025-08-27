@@ -45,6 +45,10 @@ class StarSign implements IStarSign {
     return new StarSign(this, year);
   }
 
+  public get instant() {
+		return new Date(new Date().getFullYear(), this.month, this.day, 0, 0, 0, 0);
+  }
+
   public get next() {
     const index = (this.month + 1) % StarSign.#total();
 
@@ -63,6 +67,10 @@ class StarSign implements IStarSign {
     return sign;
   }
 
+	public isNextMonth(instant: Date | number): boolean {
+		return new Date(instant).getMonth() === this.range.until.month;
+	}
+
   public get prev() {
     const index = (this.month - 1 + StarSign.#total()) % StarSign.#total();
 
@@ -80,6 +88,10 @@ class StarSign implements IStarSign {
 
     return sign;
   }
+
+  public isPrevMonth(instant: Date | number): boolean {
+		return new Date(instant).getMonth() === this.range.since.month;
+	}
 
   public get range() {
     return {
