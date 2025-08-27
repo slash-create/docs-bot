@@ -8,6 +8,8 @@ import { VERSION_REGEX } from "./constants";
 import type { AggregatorInformation, GitTreeBranchResponse } from "./types";
 import { TypeNavigator } from "./navigator";
 import type { Provider } from "./source";
+import { logger } from "../../archive/util/logger";
+import { creator } from "../..";
 
 export default class VersionAggregator {
 	readonly provider: Provider;
@@ -105,6 +107,7 @@ export default class VersionAggregator {
 	}
 
 	async refresh() {
+    logger.log(`[${this.provider.docs.host}] Refreshing version data...`);
 		this.#ready = false;
 		this.#deferred = Promise.withResolvers();
 
@@ -113,15 +116,18 @@ export default class VersionAggregator {
 		);
 
 		if (!res.ok) {
+      logger.error(`[${this.provider.docs.host}] Failed to fetch version data: ${res.status} ${res.statusText}`);
 			if (res.status === 403) {
 				const resetHeader = new Date(
 					+res.headers.get("x-ratelimit-reset") * 1000,
 				);
 				if (this.#interval.nextCallAt > resetHeader.getTime())
 					setTimeout(this.refresh, resetHeader.getTime());
+        return;
 			}
 
-			return;
+      // If I am here, something has gone wrong.
+      throw new Error(`Failed to fetch version data: ${res.status} ${res.statusText}`);
 		}
 
 		const data: GitTreeBranchResponse = await res.json();
