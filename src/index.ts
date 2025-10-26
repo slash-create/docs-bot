@@ -138,7 +138,7 @@ await creator.registerCommandsIn(path.resolve(import.meta.dir, "./commands"), [
 console.timeLog("Startup", "Commands & Components Loaded");
 
 creator.withServer(new BunServer());
-// await creator.syncGlobalCommands(true);
+await creator.syncGlobalCommands(true);
 await creator.collectCommandIDs();
 await creator.startServer();
 
@@ -152,13 +152,13 @@ await Promise.allSettled(
 RequestQuota.debug();
 
 process.on("uncaughtException", async (error, origin) => {
-  sendPanicMessage(creator, `Uncaught Exception (${origin}): ${error.message}\n\n\`\`\`${error.stack}\`\`\``).catch(() => null);
+  await sendPanicMessage(creator, `Uncaught Exception (${origin}): ${error.message}\n\n\`\`\`${error.stack}\`\`\``).catch((err) => console.error(err));
 	console.log(JSON.stringify(error));
 	console.log(error);
 	console.log(origin);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
-  sendPanicMessage(creator, `Unhandled Rejection: ${JSON.stringify(reason)}`).catch(() => null);
+process.on("unhandledRejection", async (reason, promise) => {
+  await sendPanicMessage(creator, `Unhandled Rejection: ${JSON.stringify(reason)}`).catch((err) => console.error(err));
 	console.log(reason);
 });
