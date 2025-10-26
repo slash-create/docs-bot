@@ -1,3 +1,7 @@
+import katex from 'katex';
+require('katex/contrib/mhchem');
+export { katex };
+
 const roundFactor =
 	(fn: (arg: number) => number) =>
 	(n: number, factor = 1) =>
