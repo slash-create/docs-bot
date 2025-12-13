@@ -116,9 +116,13 @@ export default class ChatDebugCommand extends BaseCommand {
 			)}> is not in a guild context, you should not be here.`;
 		}
 
+    const notes: string[] = [];
+
 		switch (subCommand) {
 			case "user": {
 				rawPayload = ChatDebugCommand.getUserTargetFrom(ctx);
+        if (!('user' in rawPayload))
+          notes.push(":warning: `target` user was not found in guild context, a fallback object has been used.");
 				break;
 			}
 
@@ -148,6 +152,7 @@ export default class ChatDebugCommand extends BaseCommand {
 			rawPayload,
 			subCommand,
 			targetID,
+      notes
 		);
 	}
 
@@ -161,13 +166,20 @@ export default class ChatDebugCommand extends BaseCommand {
 			| { id: string },
 		type: string,
 		target: string,
+    notes?: string[]
 	): MessageOptions {
 		const isURL = target.startsWith("https://");
 		const mention =
 			type in MentionPrefixes
 				? `<${MentionPrefixes[type]}${target}>`
 				: `\`${target}\``;
-		const header = `The **${type}** payload for ${isURL ? target : mention}`;
+		const header = [
+      `The **${type}** payload for ${isURL ? target : mention}`,
+      (notes && notes.length && [
+        ":notepad_spiral: **Payload Notes**",
+        notes.map(line => "- " + line)
+      ])
+    ].flat().join("\n");
 		const stringPayload = JSON.stringify(payload, null, 2).replaceAll(
 			"`",
 			"`\u200b",
