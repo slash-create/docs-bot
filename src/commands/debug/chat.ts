@@ -92,12 +92,12 @@ export default class ChatDebugCommand extends BaseCommand {
 
 		const { resolved } = context.data.data;
 
-		return !inGuild
-			? resolved.users[target]
-			: {
+		return inGuild && resolved.members?.[target]
+			? {
 					...resolved.members[target],
 					user: resolved.users[target],
-				};
+				}
+      : resolved.users[target];
 	}
 
 	async run(ctx: CommandContext): Promise<MessageOptions | string> {
