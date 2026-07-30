@@ -1,5 +1,4 @@
 export class FixedInterval {
-	#isFirstCall = true;
 	#count = 0;
 	#ref: ReturnType<typeof setTimeout>;
 
@@ -12,7 +11,13 @@ export class FixedInterval {
 		public shortCall: boolean,
 		/** The callback to run when each interval passes, including how many times it has run. */
 		public callback: (count: number) => void | Promise<void>,
-	) {}
+	) {
+    if (this.shortCall) {
+      this.callback(this.#count++);
+    }
+
+    this.run();
+  }
 
 	get timeUntilNextCall(): number {
 		return this.interval - (Date.now() % this.interval) + this.offset;
@@ -22,18 +27,23 @@ export class FixedInterval {
 		return Date.now() + this.timeUntilNextCall;
 	}
 
-	run() {
-		if (this.#ref) clearTimeout(this.#ref);
+  private clear() {
+    if (!this.ref) return;
+    clearTimeout(this.ref);
+    this.ref = null;
+		this.#count = 0;
+  }
+
+	private run() {
+		this.clear();
 		this.#ref = setTimeout(() => {
-			if (!this.#isFirstCall || this.shortCall) this.callback(this.#count++);
-			this.#isFirstCall &&= false;
+      this.callback(this.#count++);
 			this.run();
 		}, this.timeUntilNextCall);
 		return this;
 	}
 
 	destroy() {
-		if (this.#ref) clearTimeout(this.#ref);
-		this.#count = 0;
+		this.clear();
 	}
 }
