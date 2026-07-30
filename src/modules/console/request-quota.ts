@@ -2,7 +2,7 @@ import { TIME } from "&common/constants";
 import { FixedInterval } from "&common/fixed-interval";
 
 new FixedInterval(TIME.HOUR, 0, false, (call: number) => {
-	RequestQuota.debug();
+	console.log(RequestQuota.debug());
 	if (call % 6 === 0) RequestQuota.flush();
 	else RequestQuota.prune();
 });
