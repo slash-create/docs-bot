@@ -179,7 +179,7 @@ export default class ChatDebugCommand extends BaseCommand {
         ":notepad_spiral: **Payload Notes**",
         notes.map(line => "- " + line)
       ])
-    ].flat().join("\n");
+    ].filter(value => value).flat().join("\n");
 		const stringPayload = JSON.stringify(payload, null, 2).replaceAll(
 			"`",
 			"`\u200b",
