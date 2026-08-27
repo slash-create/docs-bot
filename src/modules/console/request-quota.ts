@@ -32,8 +32,8 @@ export default class RequestQuota {
 	}
 
 	static debug() {
-		for (const pair of RequestQuota.tally) {
-			RequestQuota.#buildQuotaString(...pair);
+		for (const [res, quota] of RequestQuota.tally) {
+			console.log(RequestQuota.#buildQuotaString(res, quota));
 		}
 	}
 
