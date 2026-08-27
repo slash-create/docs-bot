@@ -2,7 +2,7 @@ import { TIME } from "&common/constants";
 import { FixedInterval } from "&common/fixed-interval";
 
 new FixedInterval(TIME.HOUR, 0, false, (call: number) => {
-	RequestQuota.debug();
+	RequestQuota.debugAll();
 	if (call % 6 === 0) RequestQuota.flush();
 	else RequestQuota.prune();
 });
@@ -31,10 +31,15 @@ export default class RequestQuota {
 		}
 	}
 
-	static debug() {
+	static *debug() {
 		for (const [res, quota] of RequestQuota.tally) {
-			console.log(RequestQuota.#buildQuotaString(res, quota));
+			yield RequestQuota.#buildQuotaString(res, quota);
 		}
+	}
+
+	static debugAll() {
+		for (const entry of RequestQuota.debug())
+			console.log(entry);
 	}
 
 	static #buildQuotaString(resource: string, quota: QuotaStruct) {
