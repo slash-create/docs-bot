@@ -97,6 +97,7 @@ export class Provider implements ProviderOptions {
 			const cached = Provider.cache.get(url);
 			console.log(`Provider(${this.label}) Cache hit`, url, cached.fetchedAt);
 			if (cached.fetchedAt > Date.now() - TIME.MINUTE) return cached.response;
+			Provider.cache.delete(url);
 		}
 
 		const res = await fetch(url, {

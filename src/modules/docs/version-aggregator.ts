@@ -106,8 +106,9 @@ export default class VersionAggregator {
   }
 
   async refresh() {
+    if (!this.#ready) return;
     console.log(`[${this.provider.docs.host}] Refreshing version data...`);
-    this.#ready = false;
+    this.destroy();
     this.#deferred = Promise.withResolvers();
 
     const res = await this.provider.fetchGitHubAPI(
@@ -172,6 +173,10 @@ export default class VersionAggregator {
 
   destroy() {
     this.#interval.destroy();
+    for (const [, navigator] of this.#navigators) {
+      navigator.destroy();
+    }
+    this.#navigators.clear();
     this.#ready = false;
   }
 }

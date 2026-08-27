@@ -136,9 +136,9 @@ export class TypeNavigator {
   }
   */
 	async refresh() {
-		this.#ready = false;
+		if (!this.#ready) return;
+		this.destroy();
 		this.#deferred = Promise.withResolvers();
-		this.map.clear();
 
 		const res = await this.aggregator.provider.fetchGitHubAPI(this.#targetURI);
 		this.#raw = await res.json();
@@ -204,5 +204,10 @@ export class TypeNavigator {
 
 	[Bun.inspect.custom]() {
 		return `<${this.constructor.name} tag="${this.tag}">`;
+	}
+
+	destroy() {
+		this.#interval.destroy();
+		this.map.clear();
 	}
 }
