@@ -33,7 +33,7 @@ export default class RequestQuota {
 
 	static debug() {
 		for (const pair of RequestQuota.tally) {
-			console.log(RequestQuota.#buildQuotaString(...pair));
+			RequestQuota.#buildQuotaString(...pair);
 		}
 	}
 

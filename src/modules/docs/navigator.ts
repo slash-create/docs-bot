@@ -69,10 +69,9 @@ export class TypeNavigator {
 		this.#interval = new FixedInterval(
 			TIME.HOUR / 4,
 			0,
-			false,
+			true,
 			this.refresh.bind(this),
 		);
-		this.refresh();
 	}
 
 	get #targetURI() {

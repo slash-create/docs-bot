@@ -99,10 +99,9 @@ export default class VersionAggregator {
     this.#interval = new FixedInterval(
       TIME.HOUR * 3,
       0,
-      false,
+      true,
       this.refresh.bind(this),
     );
-    this.refresh();
   }
 
   async refresh() {
