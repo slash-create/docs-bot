@@ -69,8 +69,11 @@ export class TypeNavigator {
 		this.#interval = new FixedInterval(
 			TIME.HOUR / 4,
 			0,
-			true,
-			this.refresh.bind(this),
+      true,
+      async () => {
+        this.destroy();
+        await this.refresh();
+      },
 		);
 	}
 
@@ -135,8 +138,7 @@ export class TypeNavigator {
   }
   */
 	async refresh() {
-		if (!this.#ready) return;
-		this.destroy();
+		if (this.#ready) return;
 		this.#deferred = Promise.withResolvers();
 
 		const res = await this.aggregator.provider.fetchGitHubAPI(this.#targetURI);
@@ -206,7 +208,8 @@ export class TypeNavigator {
 	}
 
 	destroy() {
-		this.#interval.destroy();
+    this.#ready = false;
+		this.#interval?.destroy();
 		this.map.clear();
 	}
 }

@@ -96,20 +96,22 @@ export default class VersionAggregator {
   #setupInterval(force = true) {
     if (this.#interval && !force) return;
 
+    this.#interval?.destroy();
+
     this.#interval = new FixedInterval(
       TIME.HOUR * 3,
       0,
-      false,
-      this.refresh.bind(this),
+      true,
+      async () => {
+        this.destroy();
+        await this.refresh();
+      },
     );
-
-    this.refresh(force);
   }
 
-  async refresh(force = false) {
-    if (!this.#ready && !force) return;
+  async refresh() {
+    if (this.#ready) return;
     console.log(`[${this.provider.docs.host}] Refreshing version data...`);
-    this.destroy();
     this.#deferred = Promise.withResolvers();
 
     const res = await this.provider.fetchGitHubAPI(
@@ -173,14 +175,11 @@ export default class VersionAggregator {
   }
 
   destroy() {
-    if (this.#interval)
-      this.#interval.destroy();
-    if (this.#navigators) {
-      for (const [, navigator] of this.#navigators) {
-        navigator.destroy();
-      }
-      this.#navigators.clear();
+    this.#interval?.destroy();
+    for (const [, navigator] of this.#navigators ?? [["", { destroy() {} }]]) {
+      navigator.destroy();
     }
+    this.#navigators?.clear();
     this.#ready = false;
   }
 }
