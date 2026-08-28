@@ -149,7 +149,7 @@ console.timeEnd("Startup");
 await Promise.allSettled(
 	Provider.all.map((provider) => provider.aggregator.onReady),
 );
-RequestQuota.debug();
+RequestQuota.debugAll();
 
 process.on("uncaughtException", async (error, origin) => {
   await sendPanicMessage(creator, `Uncaught Exception (${origin}): ${error.message}\n\n\`\`\`${error.stack}\`\`\``).catch((err) => console.error(err));

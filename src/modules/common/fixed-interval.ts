@@ -28,9 +28,9 @@ export class FixedInterval {
 	}
 
   private clear() {
-    if (!this.ref) return;
-    clearTimeout(this.ref);
-    this.ref = null;
+    if (!this.#ref) return;
+    clearTimeout(this.#ref);
+    this.#ref = null;
 		this.#count = 0;
   }
 

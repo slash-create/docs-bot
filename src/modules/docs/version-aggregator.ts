@@ -31,7 +31,7 @@ export default class VersionAggregator {
 
   #releases: string[];
   #branches: string[];
-  #navigators: Map<string, TypeNavigator>;
+  #navigators: Map<string, TypeNavigator> = new Map();
 
   get debug(): AggregatorInformation {
     const self = this;
@@ -99,13 +99,15 @@ export default class VersionAggregator {
     this.#interval = new FixedInterval(
       TIME.HOUR * 3,
       0,
-      true,
+      false,
       this.refresh.bind(this),
     );
+
+    this.refresh(force);
   }
 
-  async refresh() {
-    if (!this.#ready) return;
+  async refresh(force = false) {
+    if (!this.#ready && !force) return;
     console.log(`[${this.provider.docs.host}] Refreshing version data...`);
     this.destroy();
     this.#deferred = Promise.withResolvers();
@@ -171,11 +173,14 @@ export default class VersionAggregator {
   }
 
   destroy() {
-    this.#interval.destroy();
-    for (const [, navigator] of this.#navigators) {
-      navigator.destroy();
+    if (this.#interval)
+      this.#interval.destroy();
+    if (this.#navigators) {
+      for (const [, navigator] of this.#navigators) {
+        navigator.destroy();
+      }
+      this.#navigators.clear();
     }
-    this.#navigators.clear();
     this.#ready = false;
   }
 }
