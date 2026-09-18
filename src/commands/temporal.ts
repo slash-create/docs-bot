@@ -695,7 +695,7 @@ export default class TemporalCommand extends BaseCommand {
         break;
     }
 
-    if (snowflake === "") {
+    if (snowflake === "" || /^\d+$/.test(snowflake)) {
       return "Unknown outcome, snowflake was not found.";
     }
 
